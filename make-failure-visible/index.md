@@ -74,7 +74,9 @@ In this loop, a failure with a name is worth FLOPs. Two of the gaps to the basel
 
 **ccsd was stuck at 1.09×.** The named cause: a single inconsistent term could poison an entire family of shared schedules. Splitting families by signature: 0.935×.
 
-The scoreboard, in the loop's own units: the leading terms of the symbolic operation count (O = occupied, V = virtual orbitals, evaluated at O=1000, V=5000), each optimizer's own runtime, and verification — symbolic checks plus a numerical oracle. The last three instances are held-out: never seen during development.
+## The scoreboard
+
+In the loop's own units: the leading terms of the symbolic operation count (O = occupied, V = virtual orbitals, evaluated at O=1000, V=5000), each optimizer's own runtime, and verification — symbolic checks plus a numerical oracle. The last three instances are held-out: never seen during development.
 
 | instance | baseline FLOPs | our FLOPs | baseline runtime | our runtime | verified |
 |---|---|---|---|---|---|
