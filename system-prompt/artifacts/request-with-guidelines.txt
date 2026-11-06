@@ -1,0 +1,1 @@
+Read CONTEXT.md and RESEARCH.md, then pursue the objective independently. You have at most 300 seconds of local investigation, including tools and builds. Use local resources reasonably and save evidence as you go. Continue investigating after intermediate findings; stop early only for a genuine blocker.

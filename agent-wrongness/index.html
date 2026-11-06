@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Two agent-research projects side by side. In one, failures arrive with their reasons attached. In the other, every reason must be manufactured. Can wrongness be made visible in a domain without ground truth?">
+  <meta name="theme-color" content="#f8f6f1">
+  <title>How Do You Know Your Agent Is Wrong?</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/style.css?v=3">
+</head>
+<body>
+<a class="skip-link" href="#article">Skip to article</a>
+<div class="layout">
+  <main id="article">
+    <header class="hero" id="top">
+      <h1>How Do You Know Your Agent Is Wrong?</h1>
+      <p class="byline"><time datetime="2026-10">October 2026</time> · Draft</p>
+    </header>
+
+    <p>I recently ran two agent-research projects side by side. In both, a coding agent iteratively improved a program against measurable feedback, accumulating what it learned into files. In one, the agent analyzed STM images of kagome materials. In the other, it optimized tensor-contraction schedules for quantum chemistry.</p>
+    <p>Both agents were competent. Both worked hard. What differed — and what this post is about — showed up when I read their <em>thinking</em> side by side.</p>
+
+    <section id="observations">
+      <h2>One agent thinks in observations</h2>
+      <p>Here is a real run output from the STM project — one evaluation of the analyzer on the development set:</p>
+      <div class="prompt-block"><pre><code>=== calibration ===
+  a_coverage_2sigma: 0.553   (want ~0.95)
+=== verdict ===
+  wrong_refusals: 3     silent_ok: 12     false_artifact_warnings: 3
+  drift_ambiguity_rate: 0.8125
+=== honesty ===
+  confident_wrong_total: 1    honesty_cost: 13.0
+  cost_rule: confident_wrong x10.0 + wrong_refusal x1; 0 is perfect</code></pre></div>
+      <p>And here is the agent's thinking, immediately after:</p>
+      <blockquote><p>"The frozen-dev baseline is established: a_coverage 0.55 (overconfident — F-016); silent_ok 12 (F-015); wrong_refusals 3, false_artifact_warnings 3 (F-013); drift_ambiguity_rate 0.81 (F-014). This gives the HL rounds a precise work queue with numbers."</p></blockquote>
+      <p>One run, and the next several iterations are planned: each number mapped to a named failure entry, each with a direction. And the resolution is fine enough that even a single counter moving is diagnosable — when a later run showed <code>silent_ok: 0 → 1</code>, the agent's first thought was to name the fixture class that must have flipped, and why.</p>
+      <p>Even the failures themselves arrive annotated. A refusal doesn't just refuse; it says <code>not_hexagonal: pair angles deviate 5.3° from a 60° grid (tol 3.0)</code> — the verdict, the reason, and the offending number in one line. The agent's very next thought is about the mechanism (Hann-window sidelobe peaks), which turned out to be right.</p>
+      <p>This was the pattern all through that project: the evaluator compared every output against known ground truth, per fixture, per quantity, so every failure came with its own coordinates. It ended with eighteen named, mechanism-verified failure modes, each frozen into a permanent regression test, and a sealed exam the analyzer passed honestly — including the failures, documented, with named fixes.</p>
+    </section>
+
+    <section id="hypotheses">
+      <h2>The other thinks in hypotheses</h2>
+      <p>Here is a real run output from the compiler project — one timing of a candidate schedule:</p>
+      <div class="prompt-block"><pre><code>{"candidate":"mp3_gristmill","median_ms":230.14,"iters":4,"threads":1,...}
+{"candidate":"mp3_selected","median_ms":...}</code></pre></div>
+      <p>And here is the agent's thinking, immediately after:</p>
+      <blockquote><p>"Should profile per-op. Existing selected candidates huge FLOP discrepancy indicates selector bad. Should inspect code JSON structures and main profile."</p></blockquote>
+      <p>The scalar says <em>slower</em>. It does not say where, or why, or what to look at. So the next move is not fixing, and not even diagnosing — it is building the profiler that will make the <em>next</em> run more informative than this one.</p>
+      <p>And when the records themselves are the question, they can't answer it. Still mid-diagnosis on the same benchmark, later:</p>
+      <blockquote><p>"Old candidate perhaps generated at sizes100,1000 not16,64! […] The <code>select_heldout</code> perhaps commands not stored."</p></blockquote>
+      <p>The difference is visible before you read the content. The STM agent's thinking quotes numbers the environment emitted. The compiler agent's thinking is a scatter of "perhaps" — because its environment emitted one scalar per run, and its records couldn't answer even basic questions about themselves. Which command produced this schedule? Nobody stored it. The first act of every diagnosis in this project was <em>building</em> an inspection tool, then guessing which of three stories was true.</p>
+      <p>One agent's failures arrive with the "why" attached. The other's "why" must be manufactured by the reasoner, at full price, every time.</p>
+    </section>
+
+    <section id="validity">
+      <h2>Numbers don't carry their own validity</h2>
+      <p>Once I saw this, I found its consequences everywhere in the compiler project's records.</p>
+      <p>A schedule had been timed and showed a win. The timing run had no idea the schedule was numerically wrong — correctness lived in a <em>different command</em>, and the intersection was checked by nobody. The win looked exactly like a real win.</p>
+      <p>The same baseline was measured in two honest, protocol-compliant sessions: 58.7 ms and 67.9 ms. Fifteen percent apart, nothing flagged it, and two downstream conclusions silently depended on which number was right. There was no way to adjudicate — there is no ground truth for wall time, only measurements of it.</p>
+      <p>And a headline comparison rested on measurements with too-few iterations and a 3.4× spread between repeats of the <em>same candidate</em> — visible right there in the file, for weeks. Nobody was assigned to look.</p>
+      <p>In the STM project, a wrong answer came with its location and size. In the compiler project, wrongness lived at <em>intersections</em> — timing ∩ correctness, session ∩ session, claim ∩ fine print — and intersections only get checked when someone with judgment decides to look.</p>
+    </section>
+
+    <section id="properties">
+      <h2>What would make wrongness visible?</h2>
+      <p>Debugging is my mental model. Programming environments make wrongness visible in four ways; agent research environments usually ship with none:</p>
+      <p><strong>Detectable.</strong> A failing build produces a signal. A silently-wrong number does not. Most agent loops emit rewards, not alarms.</p>
+      <p><strong>Diagnosable.</strong> A stack trace says <em>where</em>. A bare "test failed" does not. This is the difference between a per-fixture residual and a single wall-time scalar — between getting the "why" with the failure and manufacturing it yourself, one "perhaps" at a time.</p>
+      <p><strong>Expensive to ignore.</strong> A compiler warning gets ignored; a compiler error blocks the build. This is the property people underestimate. Disclosure without enforcement is a warning, and warnings get ignored. In the STM project, the scoring priced a confident wrong answer at ten times a refusal. As that agent put it: <em>a refusal is a delay; a lie is fake science.</em></p>
+      <p><strong>Remembered.</strong> A bug fixed without a postmortem recurs. An agent session that ends forgets. The STM project froze every failure into a permanent regression test; the compiler project re-derived the same lessons across context resets.</p>
+      <p>The STM project got all four from its environment, for free, because ground truth was available. The compiler project has no ground truth. So the question becomes: can these four properties be built by hand, into an environment that doesn't provide them?</p>
+      <p>I don't know. We're trying — the current attempt moves the workflow into versioned files, installs a run-once exam and a critic whose challenges block progress, and prices confident wrong answers above honest refusals. It's too early to say whether it works. What I can say is that the attempt has already changed what I watch: less the agent's outputs, more whether its failures arrive with their coordinates attached.</p>
+      <p class="closing">My last post ended by asking how to get an agent to question its chosen approach. I suspect this is the same question in disguise. An agent questions its conclusions exactly when wrongness is detectable, diagnosable, expensive, and remembered — and not before. Making that true, in domains without ground truth, is the problem we're working on now.</p>
+    </section>
+
+    <section class="materials" id="materials">
+      <h2>Background</h2>
+      <ul class="material-links">
+        <li><a href="https://br0kensmi1e.github.io/system-prompt/">The previous post, whose open problem this one revisits</a></li>
+        <li><a href="https://trinkle23897.github.io/learning-beyond-gradients/">Jiayi Weng, <em>Learning Beyond Gradients</em> — the heuristic-learning framing both projects used</a></li>
+        <li><a href="https://github.com/Br0kenSmi1e/agent-wrongness">This blog's source and revision history</a></li>
+      </ul>
+      <p class="editorial-note">Written with AI assistance from the original conversations and saved session records. Quotes are verbatim from session logs; <code>[…]</code> marks omissions. The compiler project is unfinished. The raw sessions, credentials, and private repositories are not published.</p>
+    </section>
+    <footer><a href="#top">Back to top</a></footer>
+  </main>
+</div>
+</body>
+</html>

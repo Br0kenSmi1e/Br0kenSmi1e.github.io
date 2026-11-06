@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Essays on agents, research, and how to work with both.">
+  <meta name="theme-color" content="#f8f6f1">
+  <title>Longli Zheng — Writing</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f8f6f1;
+      --ink: #262c2b;
+      --muted: #626963;
+      --accent: #236b5b;
+      --line: #dcded5;
+      --serif: Charter, "Bitstream Charter", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 19px/1.75 var(--serif); -webkit-font-smoothing: antialiased; }
+    .layout { max-width: 784px; margin: auto; padding: 64px 32px 32px; }
+    a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+    ::selection { background: #d7e5cf; }
+    h1 { font-size: 48px; font-weight: 500; line-height: 1.15; letter-spacing: -.025em; margin: 0 0 20px; }
+    .byline { font: 14px/1.6 var(--sans); color: var(--muted); margin: 0 0 48px; }
+    ul.posts { list-style: none; margin: 0; padding: 0; }
+    ul.posts li { margin-bottom: 36px; padding-bottom: 36px; border-bottom: 1px solid var(--line); }
+    ul.posts li:last-child { border-bottom: none; }
+    .post-title { font-size: 24px; font-weight: 600; line-height: 1.3; letter-spacing: -.015em; margin: 0 0 6px; }
+    .post-title a { color: var(--ink); text-decoration: none; }
+    .post-title a:hover { color: var(--accent); }
+    .post-date { font: 14px/1.6 var(--sans); color: var(--muted); margin: 0 0 10px; }
+    .post-desc { margin: 0; }
+    footer { margin-top: 48px; font: 14px/1.6 var(--sans); color: var(--muted); }
+    @media (max-width: 600px) {
+      body { font-size: 18px; }
+      .layout { padding: 32px 22px; }
+      h1 { font-size: 36px; }
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <main>
+    <h1>Writing</h1>
+    <p class="byline">Longli Zheng · Essays on agents, research, and how to work with both</p>
+    <ul class="posts">
+      <li>
+        <h2 class="post-title"><a href="agent-wrongness/">How Do You Know Your Agent Is Wrong?</a></h2>
+        <p class="post-date"><time datetime="2026-10">October 2026</time></p>
+        <p class="post-desc">Two agent-research projects side by side. In one, failures arrive with their reasons attached. In the other, every reason must be manufactured. Can wrongness be made visible in a domain without ground truth?</p>
+      </li>
+      <li>
+        <h2 class="post-title"><a href="system-prompt/">System Prompt Is All You Need?</a></h2>
+        <p class="post-date"><time datetime="2026-09">September 2026</time></p>
+        <p class="post-desc">A minimal prompt freed my agent from a rigid research workflow. Getting it to question its chosen research direction is still an open problem.</p>
+      </li>
+    </ul>
+  </main>
+  <footer>
+    <a href="https://github.com/Br0kenSmi1e">GitHub</a>
+  </footer>
+</div>
+</body>
+</html>

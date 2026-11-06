@@ -1,0 +1,1 @@
+Read CONTEXT.md and RESEARCH.md, then pursue the objective. You have at most 300 seconds of local investigation, including tools and builds.

@@ -1,0 +1,159 @@
+{
+  "description": "Selected non-sensitive metadata from all four demo batches; raw sessions and credentials excluded. Qualitative observations are not independently scored research-quality measures.",
+  "runs": [
+    {
+      "batch": "20260923-145215",
+      "guidelines": true,
+      "identity": "none",
+      "run_id": "run-5ec54afeb267",
+      "status": "wall_limit",
+      "included_in_six_run_table": true,
+      "elapsed_seconds": 300.353,
+      "tool_calls": 9,
+      "errors": [],
+      "model": "gpt-6-astra",
+      "reasoning": "low",
+      "notebook_changed": true
+    },
+    {
+      "batch": "20260923-145215",
+      "guidelines": true,
+      "identity": "coding",
+      "run_id": "run-f717c9249946",
+      "status": "wall_limit",
+      "included_in_six_run_table": true,
+      "elapsed_seconds": 300.339,
+      "tool_calls": 10,
+      "errors": [],
+      "model": "gpt-6-astra",
+      "reasoning": "low",
+      "notebook_changed": true
+    },
+    {
+      "batch": "20260923-145215",
+      "guidelines": true,
+      "identity": "research",
+      "run_id": "run-6bdc3eee4356",
+      "status": "wall_limit",
+      "included_in_six_run_table": true,
+      "elapsed_seconds": 300.394,
+      "tool_calls": 11,
+      "errors": [],
+      "model": "gpt-6-astra",
+      "reasoning": "low",
+      "notebook_changed": true
+    },
+    {
+      "batch": "20260923-160128",
+      "guidelines": false,
+      "identity": "research",
+      "run_id": "run-91938f07d990",
+      "status": "wall_limit",
+      "included_in_six_run_table": false,
+      "elapsed_seconds": 300.345,
+      "tool_calls": 11,
+      "errors": [],
+      "model": "gpt-6-astra",
+      "reasoning": "low",
+      "notebook_changed": false
+    },
+    {
+      "batch": "20260923-160128",
+      "guidelines": false,
+      "identity": "none",
+      "run_id": "run-ba5ac9375d6d",
+      "status": "error",
+      "included_in_six_run_table": false,
+      "elapsed_seconds": 127.642,
+      "tool_calls": 3,
+      "errors": [
+        "WebSocket error"
+      ],
+      "model": "gpt-6-astra",
+      "reasoning": "low",
+      "notebook_changed": false
+    },
+    {
+      "batch": "20260923-160128",
+      "guidelines": false,
+      "identity": "coding",
+      "run_id": "run-0ea0d0a45d3e",
+      "status": "not_started",
+      "included_in_six_run_table": false
+    },
+    {
+      "batch": "20260923-160905",
+      "guidelines": false,
+      "identity": "none",
+      "run_id": "run-829bc4a001fe",
+      "status": "error",
+      "included_in_six_run_table": false,
+      "elapsed_seconds": 8.444,
+      "tool_calls": 0,
+      "errors": [
+        "fetch failed"
+      ],
+      "model": "gpt-6-astra",
+      "reasoning": "low",
+      "notebook_changed": false
+    },
+    {
+      "batch": "20260923-160905",
+      "guidelines": false,
+      "identity": "coding",
+      "run_id": "run-6e821e053f71",
+      "status": "not_started",
+      "included_in_six_run_table": false
+    },
+    {
+      "batch": "20260923-160905",
+      "guidelines": false,
+      "identity": "research",
+      "run_id": "run-f24690ee677b",
+      "status": "not_started",
+      "included_in_six_run_table": false
+    },
+    {
+      "batch": "20260923-162032",
+      "guidelines": false,
+      "identity": "research",
+      "run_id": "run-9616040c6515",
+      "status": "wall_limit",
+      "included_in_six_run_table": true,
+      "elapsed_seconds": 300.488,
+      "tool_calls": 11,
+      "errors": [],
+      "model": "gpt-6-astra",
+      "reasoning": "low",
+      "notebook_changed": false
+    },
+    {
+      "batch": "20260923-162032",
+      "guidelines": false,
+      "identity": "none",
+      "run_id": "run-d9b43aa2133a",
+      "status": "wall_limit",
+      "included_in_six_run_table": true,
+      "elapsed_seconds": 300.411,
+      "tool_calls": 11,
+      "errors": [],
+      "model": "gpt-6-astra",
+      "reasoning": "low",
+      "notebook_changed": false
+    },
+    {
+      "batch": "20260923-162032",
+      "guidelines": false,
+      "identity": "coding",
+      "run_id": "run-d7ec816f7677",
+      "status": "wall_limit",
+      "included_in_six_run_table": true,
+      "elapsed_seconds": 300.379,
+      "tool_calls": 12,
+      "errors": [],
+      "model": "gpt-6-astra",
+      "reasoning": "low",
+      "notebook_changed": false
+    }
+  ]
+}
