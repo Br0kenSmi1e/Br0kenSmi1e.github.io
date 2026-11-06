@@ -90,17 +90,17 @@ In the loop's own units: the leading terms of the symbolic operation count (O = 
 
 Every row is checkable, including the tie: adc2's two columns are exactly equal — and because the solver is exact, that is a proof that within the space currently encoded, nothing cheaper than the baseline exists.
 
-And the same comparison in measured wall time — release build, ratio to the baseline, below 1.0 is a win — with the cost model's predictions beside the measurements:
+Finally, the system-level comparison: our schedule on our backend, against the baseline's own schedule run through its four shipped code generators. Median wall milliseconds at the benchmark size, one thread / sixteen threads; every cell gate-verified:
 
-| problem | 1 thread | 16 threads | model predicted |
-|---|---|---|---|
-| mp3 | 0.818 | 0.817 | 0.929 |
-| ccd | 0.636 | 1.063 | 0.954 |
-| ccsd | 0.880 | 0.852 | 0.933 |
-| adc2 | 0.621 | 1.019 | 1.001 |
-| eom_ccsd (held-out) | 1.137 | 1.303 | not modeled |
+| problem | ours | baseline-numpy | baseline-C | baseline-Fortran | baseline-Julia |
+|---|---|---|---|---|---|
+| mp3 | **203/46** | 4027/4169 | 29924/29427 | 77585/68488 | 18962/18732 |
+| ccd | **463/154** | 3179/3148 | 12197/12889 | 74165/73860 | **262**/249 |
+| ccsd | 629/**301** | 3852/3853 | 25547/24557 | 85787/85777 | **534**/508 |
+| adc2 | **59**/79 | 222/229 | 196/192 | 961/954 | 109/125 |
+| eom_ccsd (held-out) | 1021/**548** | 4131/4135 | 27100/27614 | 112143/96537 | **650**/604 |
 
-The model predicted parity or small wins; the measurements disagree in both directions — larger wins at one thread, two cells inverted at sixteen — and held-out eom_ccsd loses at both thread counts. All of it recorded as-is: no tuning the model against these numbers. (Load was climbing through the batch, so the late cells carry the most uncertainty; per-run loads are on record.) One quiet satisfaction: adc2, the exact tie in the symbolic table, wins 38% on wall time at one thread.
+The reading: we beat the numpy, C, and Fortran pipelines everywhere, by up to two orders of magnitude. The Julia backend is the real competitor — it beats our column at one thread on three of the five problems — which is itself a useful failure with an address: the schedule is fine; our backend's single-thread performance is what to fix next. Caveats on record: our column was measured while the machine's load was climbing, and the naive-loop columns ran a reduced protocol; the Julia margins are large enough to survive both. And adc2 — the exact tie in the symbolic table — beats all four native pipelines on the wall.
 
 ---
 

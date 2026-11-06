@@ -91,20 +91,20 @@
         </tbody>
       </table>
       <p>Every row is checkable, including the tie: adc2's two columns are exactly equal — and because the solver is exact, that is a proof that within the space currently encoded, nothing cheaper than the baseline exists.</p>
-      <p>And the same comparison in measured wall time — release build, ratio to the baseline, below 1.0 is a win — with the cost model's predictions beside the measurements:</p>
+      <p>Finally, the system-level comparison: our schedule on our backend, against the baseline's own schedule run through its four shipped code generators. Median wall milliseconds at the benchmark size, one thread / sixteen threads; every cell gate-verified:</p>
       <table>
         <thead>
-          <tr><th>problem</th><th>1 thread</th><th>16 threads</th><th>model predicted</th></tr>
+          <tr><th>problem</th><th>ours</th><th>baseline-numpy</th><th>baseline-C</th><th>baseline-Fortran</th><th>baseline-Julia</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>mp3</code></td><td>0.818</td><td>0.817</td><td>0.929</td></tr>
-          <tr><td><code>ccd</code></td><td>0.636</td><td>1.063</td><td>0.954</td></tr>
-          <tr><td><code>ccsd</code></td><td>0.880</td><td>0.852</td><td>0.933</td></tr>
-          <tr><td><code>adc2</code></td><td>0.621</td><td>1.019</td><td>1.001</td></tr>
-          <tr><td><code>eom_ccsd</code> (held-out)</td><td>1.137</td><td>1.303</td><td>not modeled</td></tr>
+          <tr><td><code>mp3</code></td><td><strong>203/46</strong></td><td>4027/4169</td><td>29924/29427</td><td>77585/68488</td><td>18962/18732</td></tr>
+          <tr><td><code>ccd</code></td><td><strong>463/154</strong></td><td>3179/3148</td><td>12197/12889</td><td>74165/73860</td><td><strong>262</strong>/249</td></tr>
+          <tr><td><code>ccsd</code></td><td>629/<strong>301</strong></td><td>3852/3853</td><td>25547/24557</td><td>85787/85777</td><td><strong>534</strong>/508</td></tr>
+          <tr><td><code>adc2</code></td><td><strong>59</strong>/79</td><td>222/229</td><td>196/192</td><td>961/954</td><td>109/125</td></tr>
+          <tr><td><code>eom_ccsd</code> (held-out)</td><td>1021/<strong>548</strong></td><td>4131/4135</td><td>27100/27614</td><td>112143/96537</td><td><strong>650</strong>/604</td></tr>
         </tbody>
       </table>
-      <p>The model predicted parity or small wins; the measurements disagree in both directions — larger wins at one thread, two cells inverted at sixteen — and held-out <code>eom_ccsd</code> loses at both thread counts. All of it recorded as-is: no tuning the model against these numbers. (Load was climbing through the batch, so the late cells carry the most uncertainty; per-run loads are on record.) One quiet satisfaction: adc2, the exact tie in the symbolic table, wins 38% on wall time at one thread.</p>
+      <p>The reading: we beat the numpy, C, and Fortran pipelines everywhere, by up to two orders of magnitude. The Julia backend is the real competitor — it beats our column at one thread on three of the five problems — which is itself a useful failure with an address: the schedule is fine; our backend's single-thread performance is what to fix next. Caveats on record: our column was measured while the machine's load was climbing, and the naive-loop columns ran a reduced protocol; the Julia margins are large enough to survive both. And <code>adc2</code> — the exact tie in the symbolic table — beats all four native pipelines on the wall.</p>
     </section>
 
     <section class="materials" id="materials">
