@@ -68,11 +68,13 @@ So each question got its own loop. One arm owns the encoding and the search: an 
 
 ## What failure looks like now
 
-Bugs arrive with addresses. When the verifier rejected one schedule, the agent bisected a 63-term equation down to four specific terms — {32, 33, 37, 42} — before any human looked at the failure. The fix followed from the mechanism, not from a lucky guess.
+In this loop, a failure with a name is worth FLOPs. Two of the gaps to the baseline closed exactly this way — by naming the missing class, not by grinding the solver.
 
-Gaps arrive with proofs. On one problem (adc2), the solver tied the baseline exactly — and because the solver is exact, the tie is a proof: within the space we had encoded, nothing better exists. That is not a dead end. It is the most useful sentence in the project, because it says precisely where to dig next.
+**ccd was behind, at 1.016×.** The named cause: the symmetry mining ran in the wrong canonical space and hid sharing, so the solver built duplicate intermediates. Fixed: 0.9999× — under the baseline.
 
-Wins arrive checkable. Verified operation counts against the baseline: 0.656×, 0.992×, 0.935×, and the exact tie. Measured wall time on the release build, single-threaded: 0.62× to 0.88× of the baseline on the four training problems. And on held-out problems the agent had never seen during development: one beats the baseline, one wins large on operation count, one *loses* on wall time — recorded in the same file, by the same rules, not tuned away.
+**ccsd was stuck at 1.09×.** The named cause: a single inconsistent term could poison an entire family of shared schedules. Splitting families by signature: 0.935×.
+
+The full scoreboard is checkable: verified operation counts against the baseline are 0.656×, 0.992×, 0.935×, and one exact tie — which, because the solver is exact, is a proof that within the space currently encoded, nothing cheaper exists. Measured wall time on the release build, single-threaded: 0.62× to 0.88× of the baseline on the four training problems. And on held-out problems the agent had never seen during development: one beats the baseline, one wins large on operation count, one *loses* on wall time — recorded in the same file, by the same rules, not tuned away.
 
 ---
 
