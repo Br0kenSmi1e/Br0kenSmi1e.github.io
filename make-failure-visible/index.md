@@ -52,25 +52,21 @@ The difference is visible before you read the content. The STM agent's thinking 
 
 One agent's failures arrive with the "why" attached. The other's "why" must be manufactured by the reasoner, at full price, every time.
 
-## So we built the instruments
+## What was missing
 
-The compiler project's environment offered none of what the STM project got for free, so we tried to build it by hand.
+My mental model for all of this is debugging. A programming environment works hard to make failure visible: a failing build gives you a signal, a stack trace tells you *where*, a compiler error blocks you until you fix it, a regression test remembers. The STM project had all of this for free, because ground truth was available. The compiler project had print statements: one scalar per run, records that couldn't answer questions about themselves, sessions that forgot.
 
-Work moved into versioned files that survive the agent's memory: a failure registry (what broke, why, fixed or open), an idea ledger (each hypothesis with its adoption rule written down *before* the experiment), an append-only experiment log. Progress became gated: a run-once exam with held-out problems decides whether a milestone stands, and a critic — a fresh agent session that did none of the work and owes it nothing — files challenges that block the milestone until answered. Honesty was priced the way the STM project priced it: a confident wrong answer costs ten times an honest refusal. As that agent once put it: *a refusal is a delay; a lie is fake science.*
+The standard fix is instrumentation, and we built it — versioned registries so nothing is forgotten, a run-once exam and a critic whose challenges block progress, honesty priced into the scoring. It earned its keep, once catching a measurement artifact masquerading as an 18% win. But instrumentation only polices claims; it doesn't explain them. A lie about wall time can be caught. A slow number still arrives without a reason, because there is no ground truth for wall time — only measurements of it.
 
-The instruments caught a real lie within weeks. The project had exactly one genuine win: a schedule that beat the baseline by about 18% — on the debug build. One of the critic's eight challenges demanded the comparison be re-anchored on the release build, and there the win shrank to about 3%. Most of it had been an artifact of how we measured. The next exam forced the honest conclusion: the selector now emits the verified baseline on every problem. Parity, admitted in writing.
+And here is what took me the longest to see: correctness was never the problem. The agent could always verify a schedule — that checker existed from day one. What it could never check was *falling short*. "Are we behind, and why?" had no stack trace.
 
-That was worth the price by itself — left alone, we would have reported the 18%. But it also showed the limit of instrumentation. The exam can catch a lie about wall time; it cannot explain a slow one, because there is still no ground truth for wall time, only measurements of it. Every "why is this slower?" still began with building a tool and guessing among stories.
-
-## The bigger move: change the problem
+## Change the problem, not the debugger
 
 The way out came from a sideways conversation — about AlphaTensor, DeepMind's system that discovered faster matrix-multiplication algorithms by turning the problem into a game played on a fixed tensor. The catch is that the tensor grows as the matrix grows. So we asked: can our scheduling problem be encoded symbolically, so that the search scales with the number of *symbols* in the equation rather than the size of the indices?
 
 It can. The result is a finite, explicit space of schedules — small enough that instead of exploring it greedily, one move at a time, you can hand the whole space to an exact solver and get back the provable best.
 
-We split the project into two arms. One arm owns wall time: a cost model of the hardware, calibrated against pinned measurements, under one honesty rule — never tune the model against the result you are reporting. The other arm owns the symbolic search, and its goal is a checkable sentence: *verify, and strictly beat the baseline's operation count on every training problem.*
-
-The quiet trick is in that goal. The baseline — an existing optimizer's schedule for the same equations — is itself a point inside the space. So if the exact solver cannot beat it, the solver has not failed: it has *proved* that the space is missing a class of schedules. A gap stops being a mystery and becomes a theorem, and the next move stops being "grind harder" and becomes "name the missing class."
+In debugging terms: we stopped trying to build a better debugger and changed the language instead. The project's goal became a checkable sentence: *verify, and strictly beat the baseline's operation count on every training problem.* And because the baseline — an existing optimizer's schedule for the same equations — is itself a point inside the space, an exact solver that cannot beat it has not failed: it has *proved* that the space is missing a class of schedules. A gap stops being a heisenbug and becomes a compile error: it fires every time, at the same address, and the address names what is missing. The wall-time question didn't disappear — it moved to a separate arm, with a calibrated cost model and one honesty rule: never tune the model against the result you are reporting. But the search itself now runs on ground truth.
 
 ## What failure looks like now
 
