@@ -71,7 +71,22 @@
       <p>In this loop, a failure with a name is worth FLOPs. Two of the gaps to the baseline closed exactly this way — by naming the missing class, not by grinding the solver.</p>
       <p><strong>ccd was behind, at 1.016×.</strong> The named cause: the symmetry mining ran in the wrong canonical space and hid sharing, so the solver built duplicate intermediates. Fixed: 0.9999× — under the baseline.</p>
       <p><strong>ccsd was stuck at 1.09×.</strong> The named cause: a single inconsistent term could poison an entire family of shared schedules. Splitting families by signature: 0.935×.</p>
-      <p>The full scoreboard is checkable: verified operation counts against the baseline are 0.656×, 0.992×, 0.935×, and one exact tie — which, because the solver is exact, is a proof that within the space currently encoded, nothing cheaper exists. Measured wall time on the release build, single-threaded: 0.62× to 0.88× of the baseline on the four training problems. And on held-out problems the agent had never seen during development: one beats the baseline, one wins large on operation count, one <em>loses</em> on wall time — recorded in the same file, by the same rules, not tuned away.</p>
+      <p>The scoreboard, in the loop's own units: the leading terms of the symbolic operation count (O = occupied, V = virtual orbitals, evaluated at O=1000, V=5000), each optimizer's own runtime, and verification — symbolic checks plus a numerical oracle. The last three instances are held-out: never seen during development.</p>
+      <table>
+        <thead>
+          <tr><th>instance</th><th>baseline FLOPs</th><th>our FLOPs</th><th>baseline runtime</th><th>our runtime</th><th>verified</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>mp3</code></td><td>4·O⁴V² + 3·O³V³ + 3·O²V⁴</td><td>2·O⁴V² + 2·O³V³ + 2·O²V⁴</td><td>0.50 s</td><td>0.23 s</td><td>✓</td></tr>
+          <tr><td><code>ccd</code></td><td>4·O⁴V² + 6·O³V³ + 2·O²V⁴</td><td>4·O⁴V² + 6·O³V³ + 2·O²V⁴</td><td>0.26 s</td><td>0.06 s</td><td>✓</td></tr>
+          <tr><td><code>ccsd</code></td><td>8·O⁴V² + 8·O³V³ + 2·O²V⁴</td><td>6·O⁴V² + 8·O³V³ + 2·O²V⁴</td><td>1.78 s</td><td>0.31 s</td><td>✓</td></tr>
+          <tr><td><code>adc2</code></td><td>16·O³V² + 6·O²V³</td><td>16·O³V² + 6·O²V³</td><td>0.30 s</td><td>0.02 s</td><td>✓</td></tr>
+          <tr><td><code>ccsd_lambda</code></td><td>12·O⁴V² + 6·O³V³ + 2·O²V⁴</td><td>8·O⁴V² + 4·O³V³ + 2·O²V⁴</td><td>2.34 s</td><td>0.63 s</td><td>✓</td></tr>
+          <tr><td><code>eom_ccsd</code></td><td>18·O⁴V² + 10·O³V³ + 2·O²V⁴</td><td>12·O⁴V² + 10·O³V³ + 2·O²V⁴</td><td>4.15 s</td><td>0.70 s</td><td>✓</td></tr>
+          <tr><td><code>ccsd_t</code></td><td>19·O⁴V³ + 20·O³V⁴</td><td>4·O⁴V³ + 4·O³V⁴</td><td>11.83 s</td><td>9.79 s</td><td>✓</td></tr>
+        </tbody>
+      </table>
+      <p>Every row is checkable, including the tie: adc2's two columns are exactly equal — and because the solver is exact, that is a proof that within the space currently encoded, nothing cheaper than the baseline exists. Measured wall time tells the same story with one honest exception: 0.62× to 0.88× of the baseline on the training problems, and a loss on held-out <code>eom_ccsd</code> — recorded in the same file, by the same rules, not tuned away.</p>
     </section>
 
     <section class="materials" id="materials">

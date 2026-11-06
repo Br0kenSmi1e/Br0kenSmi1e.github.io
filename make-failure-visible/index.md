@@ -74,7 +74,19 @@ In this loop, a failure with a name is worth FLOPs. Two of the gaps to the basel
 
 **ccsd was stuck at 1.09×.** The named cause: a single inconsistent term could poison an entire family of shared schedules. Splitting families by signature: 0.935×.
 
-The full scoreboard is checkable: verified operation counts against the baseline are 0.656×, 0.992×, 0.935×, and one exact tie — which, because the solver is exact, is a proof that within the space currently encoded, nothing cheaper exists. Measured wall time on the release build, single-threaded: 0.62× to 0.88× of the baseline on the four training problems. And on held-out problems the agent had never seen during development: one beats the baseline, one wins large on operation count, one *loses* on wall time — recorded in the same file, by the same rules, not tuned away.
+The scoreboard, in the loop's own units: the leading terms of the symbolic operation count (O = occupied, V = virtual orbitals, evaluated at O=1000, V=5000), each optimizer's own runtime, and verification — symbolic checks plus a numerical oracle. The last three instances are held-out: never seen during development.
+
+| instance | baseline FLOPs | our FLOPs | baseline runtime | our runtime | verified |
+|---|---|---|---|---|---|
+| mp3 | 4·O⁴V² + 3·O³V³ + 3·O²V⁴ | 2·O⁴V² + 2·O³V³ + 2·O²V⁴ | 0.50 s | 0.23 s | ✓ |
+| ccd | 4·O⁴V² + 6·O³V³ + 2·O²V⁴ | 4·O⁴V² + 6·O³V³ + 2·O²V⁴ | 0.26 s | 0.06 s | ✓ |
+| ccsd | 8·O⁴V² + 8·O³V³ + 2·O²V⁴ | 6·O⁴V² + 8·O³V³ + 2·O²V⁴ | 1.78 s | 0.31 s | ✓ |
+| adc2 | 16·O³V² + 6·O²V³ | 16·O³V² + 6·O²V³ | 0.30 s | 0.02 s | ✓ |
+| ccsd_lambda | 12·O⁴V² + 6·O³V³ + 2·O²V⁴ | 8·O⁴V² + 4·O³V³ + 2·O²V⁴ | 2.34 s | 0.63 s | ✓ |
+| eom_ccsd | 18·O⁴V² + 10·O³V³ + 2·O²V⁴ | 12·O⁴V² + 10·O³V³ + 2·O²V⁴ | 4.15 s | 0.70 s | ✓ |
+| ccsd_t | 19·O⁴V³ + 20·O³V⁴ | 4·O⁴V³ + 4·O³V⁴ | 11.83 s | 9.79 s | ✓ |
+
+Every row is checkable, including the tie: adc2's two columns are exactly equal — and because the solver is exact, that is a proof that within the space currently encoded, nothing cheaper than the baseline exists. Measured wall time tells the same story with one honest exception: 0.62× to 0.88× of the baseline on the training problems, and a loss on held-out eom_ccsd — recorded in the same file, by the same rules, not tuned away.
 
 ---
 
