@@ -37,10 +37,11 @@ blockquote p { margin: 0; }
 pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 code { font: .9em/1.7 var(--mono); }
 p code { overflow-wrap: anywhere; }
-table { border-collapse: collapse; margin: 26px 0; font: 15px/1.6 var(--sans); }
-th, td { padding: 6px 16px 6px 0; text-align: left; border-bottom: 1px solid var(--line); }
-thead th { border-bottom-color: var(--ink); font-weight: 600; }
-tbody tr:last-child td { border-bottom: none; }
+table { width: 100%; border-collapse: collapse; margin: 26px 0; font: 14px/1.5 var(--sans); }
+th, td { padding: 5px 10px; text-align: center; border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child { text-align: left; }
+thead th { background: #edebe3; font-weight: 600; }
+tbody tr:nth-child(even) { background: #f1efe8; }
 .material-links { margin: 0 0 26px; padding-left: 24px; }
 .material-links li { margin-bottom: 10px; }
 summary { cursor: pointer; color: var(--accent); }
