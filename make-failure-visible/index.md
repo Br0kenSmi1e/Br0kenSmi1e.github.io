@@ -52,18 +52,6 @@ The difference is visible before you read the content. The STM agent's thinking 
 
 One agent's failures arrive with the "why" attached. The other's "why" must be manufactured by the reasoner, at full price, every time.
 
-## Numbers don't carry their own validity
-
-Once I saw this, I found its consequences everywhere in the compiler project's records.
-
-A schedule had been timed and showed a win. The timing run had no idea the schedule was numerically wrong — correctness lived in a *different command*, and the intersection was checked by nobody. The win looked exactly like a real win.
-
-The same baseline was measured in two honest, protocol-compliant sessions: 58.7 ms and 67.9 ms. Fifteen percent apart, nothing flagged it, and two downstream conclusions silently depended on which number was right. There was no way to adjudicate — there is no ground truth for wall time, only measurements of it.
-
-And a headline comparison rested on measurements with too-few iterations and a 3.4× spread between repeats of the *same candidate* — visible right there in the file, for weeks. Nobody was assigned to look.
-
-In the STM project, a wrong answer came with its location and size. In the compiler project, wrongness lived at *intersections* — timing ∩ correctness, session ∩ session, claim ∩ fine print — and intersections only get checked when someone with judgment decides to look.
-
 ## So we built the instruments
 
 The compiler project's environment offered none of what the STM project got for free, so we tried to build it by hand.
