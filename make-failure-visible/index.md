@@ -54,9 +54,7 @@ One agent's failures arrive with the "why" attached. The other's "why" must be m
 
 ## What was missing
 
-My mental model for all of this is debugging. A programming environment works hard to make failure visible: a failing build gives you a signal, a stack trace tells you *where*, a compiler error blocks you until you fix it, a regression test remembers. The STM project had all of this for free, because ground truth was available. The compiler project had print statements: one scalar per run, records that couldn't answer questions about themselves, sessions that forgot.
-
-The standard fix is instrumentation, and we built it — versioned registries so nothing is forgotten, a run-once exam and a critic whose challenges block progress, honesty priced into the scoring. It earned its keep, once catching a measurement artifact masquerading as an 18% win. But instrumentation only polices claims; it doesn't explain them. A lie about wall time can be caught. A slow number still arrives without a reason, because there is no ground truth for wall time — only measurements of it.
+My mental model for all of this is debugging. A programming environment works hard to make failure visible: a failing build gives you a signal, a stack trace tells you *where*, a compiler error blocks you until you fix it, a regression test remembers. The STM project had all of this for free, because ground truth was available. The compiler project had print statements — and the standard fix, more instrumentation, only gets you so far: a test can catch a false claim, but it cannot explain a slow number, because there is no ground truth for wall time, only measurements of it.
 
 And here is what took me the longest to see: correctness was never the problem. The agent could always verify a schedule — that checker existed from day one. What it could never check was *falling short*. "Are we behind, and why?" had no stack trace.
 
