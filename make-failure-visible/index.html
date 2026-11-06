@@ -101,7 +101,7 @@
           <tr><td><code>ccd</code></td><td><strong>463/154</strong></td><td>3179/3148</td><td>12197/12889</td><td>74165/73860</td><td><strong>262</strong>/249</td></tr>
           <tr><td><code>ccsd</code></td><td>629/<strong>301</strong></td><td>3852/3853</td><td>25547/24557</td><td>85787/85777</td><td><strong>534</strong>/508</td></tr>
           <tr><td><code>adc2</code></td><td><strong>59</strong>/79</td><td>222/229</td><td>196/192</td><td>961/954</td><td>109/125</td></tr>
-          <tr><td><code>eom_ccsd</code> (held-out)</td><td>1021/<strong>548</strong></td><td>4131/4135</td><td>27100/27614</td><td>112143/96537</td><td><strong>650</strong>/604</td></tr>
+          <tr><td><code>eom_ccsd</code></td><td>1021/<strong>548</strong></td><td>4131/4135</td><td>27100/27614</td><td>112143/96537</td><td><strong>650</strong>/604</td></tr>
         </tbody>
       </table>
       <p>The reading: we beat the numpy, C, and Fortran pipelines everywhere, by up to two orders of magnitude. The Julia backend is the real competitor — it beats our column at one thread on three of the five problems — which is itself a useful failure with an address: the schedule is fine; our backend's single-thread performance is what to fix next. Caveats on record: our column was measured while the machine's load was climbing, and the naive-loop columns ran a reduced protocol; the Julia margins are large enough to survive both. And <code>adc2</code> — the exact tie in the symbolic table — beats all four native pipelines on the wall.</p>

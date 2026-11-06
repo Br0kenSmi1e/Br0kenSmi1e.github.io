@@ -98,7 +98,7 @@ Finally, the system-level comparison: our schedule on our backend, against the b
 | ccd | **463/154** | 3179/3148 | 12197/12889 | 74165/73860 | **262**/249 |
 | ccsd | 629/**301** | 3852/3853 | 25547/24557 | 85787/85777 | **534**/508 |
 | adc2 | **59**/79 | 222/229 | 196/192 | 961/954 | 109/125 |
-| eom_ccsd (held-out) | 1021/**548** | 4131/4135 | 27100/27614 | 112143/96537 | **650**/604 |
+| eom_ccsd | 1021/**548** | 4131/4135 | 27100/27614 | 112143/96537 | **650**/604 |
 
 The reading: we beat the numpy, C, and Fortran pipelines everywhere, by up to two orders of magnitude. The Julia backend is the real competitor — it beats our column at one thread on three of the five problems — which is itself a useful failure with an address: the schedule is fine; our backend's single-thread performance is what to fix next. Caveats on record: our column was measured while the machine's load was climbing, and the naive-loop columns ran a reduced protocol; the Julia margins are large enough to survive both. And adc2 — the exact tie in the symbolic table — beats all four native pipelines on the wall.
 
