@@ -74,12 +74,6 @@ Gaps arrive with proofs. On one problem (adc2), the solver tied the baseline exa
 
 Wins arrive checkable. Verified operation counts against the baseline: 0.656×, 0.992×, 0.935×, and the exact tie. Measured wall time on the release build, single-threaded: 0.62× to 0.88× of the baseline on the four training problems. And on held-out problems the agent had never seen during development: one beats the baseline, one wins large on operation count, one *loses* on wall time — recorded in the same file, by the same rules, not tuned away.
 
-## One data point
-
-I used to frame all of this as "make wrongness visible." After this round I would say it wider: make *failure* visible — where failure means any verified distance from the goal. A bug is a failure whose coordinates point at code. A gap is a failure whose coordinates point at the space. The agent could always check whether its answers were correct; what changed is that falling short became explainable.
-
-My last post ended by asking how to get an agent to question its chosen approach. One project is one data point, and I would rather report it than generalize from it: the agent questioned its conclusions exactly when its failures arrived with coordinates — and when the environment could not attach coordinates, the productive move was to change the problem until it could.
-
 ---
 
 *Written with AI assistance from the original conversations and saved session records. Quotes are verbatim from session logs; `[…]` marks omissions. The compiler project is ongoing. The raw sessions, credentials, and private repositories are not published.*
