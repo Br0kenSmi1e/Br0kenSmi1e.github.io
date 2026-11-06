@@ -58,13 +58,13 @@ My mental model for all of this is debugging. A programming environment works ha
 
 And here is what took me the longest to see: correctness was never the problem. The agent could always verify a schedule — that checker existed from day one. What it could never check was *falling short*. "Are we behind, and why?" had no stack trace.
 
-## Change the problem, not the debugger
+## Change the problem
 
-The way out came from a sideways conversation — about AlphaTensor, DeepMind's system that discovered faster matrix-multiplication algorithms by turning the problem into a game played on a fixed tensor. The catch is that the tensor grows as the matrix grows. So we asked: can our scheduling problem be encoded symbolically, so that the search scales with the number of *symbols* in the equation rather than the size of the indices?
+So we changed the problem. The way out came from a sideways discussion about AlphaTensor, DeepMind's system for discovering faster matrix-multiplication algorithms. I kept pushing and questioning the agent — could our scheduling problem be encoded in a similar way, symbolically, so the search scales with the number of *symbols* in the equation rather than the size of the indices? Round by round, the discussion converged on an answer: an integer linear program — the whole space of schedules, written as one exact optimization problem.
 
-It can. The result is a finite, explicit space of schedules — small enough that instead of exploring it greedily, one move at a time, you can hand the whole space to an exact solver and get back the provable best.
+This gives the two things wall time never had. A schedule's cost is an operation count — computed exactly, never measured. A ground truth. And the solver's answer is the provable best in the space — no greedy loop, no search luck left to blame.
 
-In debugging terms: we stopped trying to build a better debugger and changed the language instead. The project's goal became a checkable sentence: *verify, and strictly beat the baseline's operation count on every training problem.* And because the baseline — an existing optimizer's schedule for the same equations — is itself a point inside the space, an exact solver that cannot beat it has not failed: it has *proved* that the space is missing a class of schedules. A gap stops being a heisenbug and becomes a compile error: it fires every time, at the same address, and the address names what is missing. The wall-time question didn't disappear — it moved to a separate arm, with a calibrated cost model and one honesty rule: never tune the model against the result you are reporting. But the search itself now runs on ground truth.
+The goal became a checkable sentence: *verify, and strictly beat the baseline on every training problem.* The baseline — an existing optimizer's schedule for the same equations — is itself a point inside that space. So when the provable best still ties or trails, the solver has not failed: it has proved the space is missing a class of schedules. The failure arrives with its cause already named.
 
 ## What failure looks like now
 
