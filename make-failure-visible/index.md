@@ -62,9 +62,9 @@ And here is what took me the longest to see: correctness was never the problem. 
 
 So we changed the problem. The way out came from a sideways discussion about AlphaTensor, DeepMind's system for discovering faster matrix-multiplication algorithms. I kept pushing and questioning the agent — could our scheduling problem be encoded in a similar way, symbolically, so the search scales with the number of *symbols* in the equation rather than the size of the indices? Round by round, the discussion converged on an answer: an integer linear program — the whole space of schedules, written as one exact optimization problem.
 
-This gives the two things wall time never had. A schedule's cost is an operation count — computed exactly, never measured. A ground truth. And the solver's answer is the provable best in the space — no greedy loop, no search luck left to blame.
+With the ILP in hand, the project split in two — because the old setup had really been two problems wearing one number. Wall time was asked to answer two questions at once: *is the schedule good?* and *is our model of the machine right?* A slow number could mean either, and said neither.
 
-The goal became a checkable sentence: *verify, and strictly beat the baseline on every training problem.* The baseline — an existing optimizer's schedule for the same equations — is itself a point inside that space. So when the provable best still ties or trails, the solver has not failed: it has proved the space is missing a class of schedules. The failure arrives with its cause already named.
+So each question got its own loop. One arm owns the encoding and the search: an exact operation count instead of a measurement, a solver whose answer is the provable best, and a checkable goal — *verify, and strictly beat the baseline on every training problem.* When that best still ties the baseline — a schedule that itself lives inside the space — the loop has not failed; it has proved the space is missing a class of schedules. The other arm owns wall time: a cost model of the hardware, calibrated against pinned measurements, under one rule — never tune the model against the result you are reporting. Each arm now fails in its own vocabulary — and every failure arrives with its cause attached.
 
 ## What failure looks like now
 
