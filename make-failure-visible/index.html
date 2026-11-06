@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Two agent-research projects side by side. In one, failures arrive with their reasons attached. In the other, every reason must be manufactured. Can wrongness be made visible in a domain without ground truth?">
+  <meta name="description" content="Two agent-research projects side by side: in one, failures arrive with their reasons attached; in the other, every reason must be manufactured. What happened when we built the instruments by hand — and then changed the problem so that failures prove their own causes.">
   <meta name="theme-color" content="#f8f6f1">
-  <title>How Do You Know Your Agent Is Wrong?</title>
+  <title>Make Failure Visible</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/style.css?v=3">
 </head>
@@ -14,8 +14,8 @@
 <div class="layout">
   <main id="article">
     <header class="hero" id="top">
-      <h1>How Do You Know Your Agent Is Wrong?</h1>
-      <p class="byline"><time datetime="2026-10">October 2026</time> · Draft</p>
+      <h1>Make Failure Visible</h1>
+      <p class="byline"><time datetime="2026-11">November 2026</time></p>
     </header>
 
     <p>I recently ran two agent-research projects side by side. In both, a coding agent iteratively improved a program against measurable feedback, accumulating what it learned into files. In one, the agent analyzed STM images of kagome materials. In the other, it optimized tensor-contraction schedules for quantum chemistry.</p>
@@ -62,16 +62,33 @@
       <p>In the STM project, a wrong answer came with its location and size. In the compiler project, wrongness lived at <em>intersections</em> — timing ∩ correctness, session ∩ session, claim ∩ fine print — and intersections only get checked when someone with judgment decides to look.</p>
     </section>
 
-    <section id="properties">
-      <h2>What would make wrongness visible?</h2>
-      <p>Debugging is my mental model. Programming environments make wrongness visible in four ways; agent research environments usually ship with none:</p>
-      <p><strong>Detectable.</strong> A failing build produces a signal. A silently-wrong number does not. Most agent loops emit rewards, not alarms.</p>
-      <p><strong>Diagnosable.</strong> A stack trace says <em>where</em>. A bare "test failed" does not. This is the difference between a per-fixture residual and a single wall-time scalar — between getting the "why" with the failure and manufacturing it yourself, one "perhaps" at a time.</p>
-      <p><strong>Expensive to ignore.</strong> A compiler warning gets ignored; a compiler error blocks the build. This is the property people underestimate. Disclosure without enforcement is a warning, and warnings get ignored. In the STM project, the scoring priced a confident wrong answer at ten times a refusal. As that agent put it: <em>a refusal is a delay; a lie is fake science.</em></p>
-      <p><strong>Remembered.</strong> A bug fixed without a postmortem recurs. An agent session that ends forgets. The STM project froze every failure into a permanent regression test; the compiler project re-derived the same lessons across context resets.</p>
-      <p>The STM project got all four from its environment, for free, because ground truth was available. The compiler project has no ground truth. So the question becomes: can these four properties be built by hand, into an environment that doesn't provide them?</p>
-      <p>I don't know. We're trying — the current attempt moves the workflow into versioned files, installs a run-once exam and a critic whose challenges block progress, and prices confident wrong answers above honest refusals. It's too early to say whether it works. What I can say is that the attempt has already changed what I watch: less the agent's outputs, more whether its failures arrive with their coordinates attached.</p>
-      <p class="closing">My last post ended by asking how to get an agent to question its chosen approach. I suspect this is the same question in disguise. An agent questions its conclusions exactly when wrongness is detectable, diagnosable, expensive, and remembered — and not before. Making that true, in domains without ground truth, is the problem we're working on now.</p>
+    <section id="instruments">
+      <h2>So we built the instruments</h2>
+      <p>The compiler project's environment offered none of what the STM project got for free, so we tried to build it by hand.</p>
+      <p>Work moved into versioned files that survive the agent's memory: a failure registry (what broke, why, fixed or open), an idea ledger (each hypothesis with its adoption rule written down <em>before</em> the experiment), an append-only experiment log. Progress became gated: a run-once exam with held-out problems decides whether a milestone stands, and a critic — a fresh agent session that did none of the work and owes it nothing — files challenges that block the milestone until answered. Honesty was priced the way the STM project priced it: a confident wrong answer costs ten times an honest refusal. As that agent once put it: <em>a refusal is a delay; a lie is fake science.</em></p>
+      <p>The instruments caught a real lie within weeks. The project had exactly one genuine win: a schedule that beat the baseline by about 18% — on the debug build. One of the critic's eight challenges demanded the comparison be re-anchored on the release build, and there the win shrank to about 3%. Most of it had been an artifact of how we measured. The next exam forced the honest conclusion: the selector now emits the verified baseline on every problem. Parity, admitted in writing.</p>
+      <p>That was worth the price by itself — left alone, we would have reported the 18%. But it also showed the limit of instrumentation. The exam can catch a lie about wall time; it cannot explain a slow one, because there is still no ground truth for wall time, only measurements of it. Every "why is this slower?" still began with building a tool and guessing among stories.</p>
+    </section>
+
+    <section id="reencoding">
+      <h2>The bigger move: change the problem</h2>
+      <p>The way out came from a sideways conversation — about AlphaTensor, DeepMind's system that discovered faster matrix-multiplication algorithms by turning the problem into a game played on a fixed tensor. The catch is that the tensor grows as the matrix grows. So we asked: can our scheduling problem be encoded symbolically, so that the search scales with the number of <em>symbols</em> in the equation rather than the size of the indices?</p>
+      <p>It can. The result is a finite, explicit space of schedules — small enough that instead of exploring it greedily, one move at a time, you can hand the whole space to an exact solver and get back the provable best.</p>
+      <p>We split the project into two arms. One arm owns wall time: a cost model of the hardware, calibrated against pinned measurements, under one honesty rule — never tune the model against the result you are reporting. The other arm owns the symbolic search, and its goal is a checkable sentence: <em>verify, and strictly beat the baseline's operation count on every training problem.</em></p>
+      <p>The quiet trick is in that goal. The baseline — an existing optimizer's schedule for the same equations — is itself a point inside the space. So if the exact solver cannot beat it, the solver has not failed: it has <em>proved</em> that the space is missing a class of schedules. A gap stops being a mystery and becomes a theorem, and the next move stops being "grind harder" and becomes "name the missing class."</p>
+    </section>
+
+    <section id="now">
+      <h2>What failure looks like now</h2>
+      <p><strong>Bugs arrive with addresses.</strong> When the verifier rejected one schedule, the agent bisected a 63-term equation down to four specific terms — {32, 33, 37, 42} — before any human looked at the failure. The fix followed from the mechanism, not from a lucky guess.</p>
+      <p><strong>Gaps arrive with proofs.</strong> On one problem (adc2), the solver tied the baseline exactly — and because the solver is exact, the tie is a proof: within the space we had encoded, nothing better exists. That is not a dead end. It is the most useful sentence in the project, because it says precisely where to dig next.</p>
+      <p><strong>Wins arrive checkable.</strong> Verified operation counts against the baseline: 0.656×, 0.992×, 0.935×, and the exact tie. Measured wall time on the release build, single-threaded: 0.62× to 0.88× of the baseline on the four training problems. And on held-out problems the agent had never seen during development: one beats the baseline, one wins large on operation count, one <em>loses</em> on wall time — recorded in the same file, by the same rules, not tuned away.</p>
+    </section>
+
+    <section id="closing">
+      <h2>One data point</h2>
+      <p>I used to frame all of this as "make wrongness visible." After this round I would say it wider: make <em>failure</em> visible — where failure means any verified distance from the goal. A bug is a failure whose coordinates point at code. A gap is a failure whose coordinates point at the space. The agent could always check whether its answers were correct; what changed is that falling short became explainable.</p>
+      <p class="closing">My last post ended by asking how to get an agent to question its chosen approach. One project is one data point, and I would rather report it than generalize from it: the agent questioned its conclusions exactly when its failures arrived with coordinates — and when the environment could not attach coordinates, the productive move was to change the problem until it could.</p>
     </section>
 
     <section class="materials" id="materials">
@@ -79,9 +96,9 @@
       <ul class="material-links">
         <li><a href="https://br0kensmi1e.github.io/system-prompt/">The previous post, whose open problem this one revisits</a></li>
         <li><a href="https://trinkle23897.github.io/learning-beyond-gradients/">Jiayi Weng, <em>Learning Beyond Gradients</em> — the heuristic-learning framing both projects used</a></li>
-        <li><a href="https://github.com/Br0kenSmi1e/Br0kenSmi1e.github.io/tree/main/agent-wrongness">This blog's source and revision history</a></li>
+        <li><a href="https://github.com/Br0kenSmi1e/Br0kenSmi1e.github.io/tree/main/make-failure-visible">This blog's source and revision history</a></li>
       </ul>
-      <p class="editorial-note">Written with AI assistance from the original conversations and saved session records. Quotes are verbatim from session logs; <code>[…]</code> marks omissions. The compiler project is unfinished. The raw sessions, credentials, and private repositories are not published.</p>
+      <p class="editorial-note">Written with AI assistance from the original conversations and saved session records. Quotes are verbatim from session logs; <code>[…]</code> marks omissions. The compiler project is ongoing. The raw sessions, credentials, and private repositories are not published.</p>
     </section>
     <footer><a href="#top">Back to top</a></footer>
   </main>

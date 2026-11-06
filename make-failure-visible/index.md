@@ -1,0 +1,103 @@
+# Make Failure Visible
+
+I recently ran two agent-research projects side by side. In both, a coding agent iteratively improved a program against measurable feedback, accumulating what it learned into files. In one, the agent analyzed STM images of kagome materials. In the other, it optimized tensor-contraction schedules for quantum chemistry.
+
+Both agents were competent. Both worked hard. What differed — and what this post is about — showed up when I read their *thinking* side by side.
+
+## One agent thinks in observations
+
+Here is a real run output from the STM project — one evaluation of the analyzer on the development set:
+
+```
+=== calibration ===
+  a_coverage_2sigma: 0.553   (want ~0.95)
+=== verdict ===
+  wrong_refusals: 3     silent_ok: 12     false_artifact_warnings: 3
+  drift_ambiguity_rate: 0.8125
+=== honesty ===
+  confident_wrong_total: 1    honesty_cost: 13.0
+  cost_rule: confident_wrong x10.0 + wrong_refusal x1; 0 is perfect
+```
+
+And here is the agent's thinking, immediately after:
+
+> The frozen-dev baseline is established: a_coverage 0.55 (overconfident — F-016); silent_ok 12 (F-015); wrong_refusals 3, false_artifact_warnings 3 (F-013); drift_ambiguity_rate 0.81 (F-014). This gives the HL rounds a precise work queue with numbers.
+
+One run, and the next several iterations are planned: each number mapped to a named failure entry, each with a direction. And the resolution is fine enough that even a single counter moving is diagnosable — when a later run showed `silent_ok: 0 → 1`, the agent's first thought was to name the fixture class that must have flipped, and why.
+
+Even the failures themselves arrive annotated. A refusal doesn't just refuse; it says `not_hexagonal: pair angles deviate 5.3° from a 60° grid (tol 3.0)` — the verdict, the reason, and the offending number in one line. The agent's very next thought is about the mechanism (Hann-window sidelobe peaks), which turned out to be right.
+
+This was the pattern all through that project: the evaluator compared every output against known ground truth, per fixture, per quantity, so every failure came with its own coordinates. It ended with eighteen named, mechanism-verified failure modes, each frozen into a permanent regression test, and a sealed exam the analyzer passed honestly — including the failures, documented, with named fixes.
+
+## The other thinks in hypotheses
+
+Here is a real run output from the compiler project — one timing of a candidate schedule:
+
+```
+{"candidate":"mp3_gristmill","median_ms":230.14,"iters":4,"threads":1,...}
+{"candidate":"mp3_selected","median_ms":...}
+```
+
+And here is the agent's thinking, immediately after:
+
+> Should profile per-op. Existing selected candidates huge FLOP discrepancy indicates selector bad. Should inspect code JSON structures and main profile.
+
+The scalar says *slower*. It does not say where, or why, or what to look at. So the next move is not fixing, and not even diagnosing — it is building the profiler that will make the *next* run more informative than this one.
+
+And when the records themselves are the question, they can't answer it. Still mid-diagnosis on the same benchmark, later:
+
+> Old candidate perhaps generated at sizes100,1000 not16,64! […] The `select_heldout` perhaps commands not stored.
+
+The difference is visible before you read the content. The STM agent's thinking quotes numbers the environment emitted. The compiler agent's thinking is a scatter of "perhaps" — because its environment emitted one scalar per run, and its records couldn't answer even basic questions about themselves. Which command produced this schedule? Nobody stored it. The first act of every diagnosis in this project was *building* an inspection tool, then guessing which of three stories was true.
+
+One agent's failures arrive with the "why" attached. The other's "why" must be manufactured by the reasoner, at full price, every time.
+
+## Numbers don't carry their own validity
+
+Once I saw this, I found its consequences everywhere in the compiler project's records.
+
+A schedule had been timed and showed a win. The timing run had no idea the schedule was numerically wrong — correctness lived in a *different command*, and the intersection was checked by nobody. The win looked exactly like a real win.
+
+The same baseline was measured in two honest, protocol-compliant sessions: 58.7 ms and 67.9 ms. Fifteen percent apart, nothing flagged it, and two downstream conclusions silently depended on which number was right. There was no way to adjudicate — there is no ground truth for wall time, only measurements of it.
+
+And a headline comparison rested on measurements with too-few iterations and a 3.4× spread between repeats of the *same candidate* — visible right there in the file, for weeks. Nobody was assigned to look.
+
+In the STM project, a wrong answer came with its location and size. In the compiler project, wrongness lived at *intersections* — timing ∩ correctness, session ∩ session, claim ∩ fine print — and intersections only get checked when someone with judgment decides to look.
+
+## So we built the instruments
+
+The compiler project's environment offered none of what the STM project got for free, so we tried to build it by hand.
+
+Work moved into versioned files that survive the agent's memory: a failure registry (what broke, why, fixed or open), an idea ledger (each hypothesis with its adoption rule written down *before* the experiment), an append-only experiment log. Progress became gated: a run-once exam with held-out problems decides whether a milestone stands, and a critic — a fresh agent session that did none of the work and owes it nothing — files challenges that block the milestone until answered. Honesty was priced the way the STM project priced it: a confident wrong answer costs ten times an honest refusal. As that agent once put it: *a refusal is a delay; a lie is fake science.*
+
+The instruments caught a real lie within weeks. The project had exactly one genuine win: a schedule that beat the baseline by about 18% — on the debug build. One of the critic's eight challenges demanded the comparison be re-anchored on the release build, and there the win shrank to about 3%. Most of it had been an artifact of how we measured. The next exam forced the honest conclusion: the selector now emits the verified baseline on every problem. Parity, admitted in writing.
+
+That was worth the price by itself — left alone, we would have reported the 18%. But it also showed the limit of instrumentation. The exam can catch a lie about wall time; it cannot explain a slow one, because there is still no ground truth for wall time, only measurements of it. Every "why is this slower?" still began with building a tool and guessing among stories.
+
+## The bigger move: change the problem
+
+The way out came from a sideways conversation — about AlphaTensor, DeepMind's system that discovered faster matrix-multiplication algorithms by turning the problem into a game played on a fixed tensor. The catch is that the tensor grows as the matrix grows. So we asked: can our scheduling problem be encoded symbolically, so that the search scales with the number of *symbols* in the equation rather than the size of the indices?
+
+It can. The result is a finite, explicit space of schedules — small enough that instead of exploring it greedily, one move at a time, you can hand the whole space to an exact solver and get back the provable best.
+
+We split the project into two arms. One arm owns wall time: a cost model of the hardware, calibrated against pinned measurements, under one honesty rule — never tune the model against the result you are reporting. The other arm owns the symbolic search, and its goal is a checkable sentence: *verify, and strictly beat the baseline's operation count on every training problem.*
+
+The quiet trick is in that goal. The baseline — an existing optimizer's schedule for the same equations — is itself a point inside the space. So if the exact solver cannot beat it, the solver has not failed: it has *proved* that the space is missing a class of schedules. A gap stops being a mystery and becomes a theorem, and the next move stops being "grind harder" and becomes "name the missing class."
+
+## What failure looks like now
+
+Bugs arrive with addresses. When the verifier rejected one schedule, the agent bisected a 63-term equation down to four specific terms — {32, 33, 37, 42} — before any human looked at the failure. The fix followed from the mechanism, not from a lucky guess.
+
+Gaps arrive with proofs. On one problem (adc2), the solver tied the baseline exactly — and because the solver is exact, the tie is a proof: within the space we had encoded, nothing better exists. That is not a dead end. It is the most useful sentence in the project, because it says precisely where to dig next.
+
+Wins arrive checkable. Verified operation counts against the baseline: 0.656×, 0.992×, 0.935×, and the exact tie. Measured wall time on the release build, single-threaded: 0.62× to 0.88× of the baseline on the four training problems. And on held-out problems the agent had never seen during development: one beats the baseline, one wins large on operation count, one *loses* on wall time — recorded in the same file, by the same rules, not tuned away.
+
+## One data point
+
+I used to frame all of this as "make wrongness visible." After this round I would say it wider: make *failure* visible — where failure means any verified distance from the goal. A bug is a failure whose coordinates point at code. A gap is a failure whose coordinates point at the space. The agent could always check whether its answers were correct; what changed is that falling short became explainable.
+
+My last post ended by asking how to get an agent to question its chosen approach. One project is one data point, and I would rather report it than generalize from it: the agent questioned its conclusions exactly when its failures arrived with coordinates — and when the environment could not attach coordinates, the productive move was to change the problem until it could.
+
+---
+
+*Written with AI assistance from the original conversations and saved session records. Quotes are verbatim from session logs; `[…]` marks omissions. The compiler project is ongoing. The raw sessions, credentials, and private repositories are not published.*
