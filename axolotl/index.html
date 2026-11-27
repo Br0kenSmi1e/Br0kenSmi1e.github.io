@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A dependently-typed proof checker in 600 lines of dependency-free Rust — de Bruijn indices, normalization by evaluation, and a kernel small enough to hold in your head.">
+  <meta name="theme-color" content="#f8f6f1">
+  <title>Axolotl — A Proof Checker That Never Grows Up</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#article">Skip to article</a>
+<div class="layout">
+  <main id="article">
+    <header class="hero" id="top">
+      <h1>Axolotl</h1>
+      <p class="byline"><time datetime="2026-11">November 2026</time> · A proof checker that never grows up</p>
+    </header>
+
+    <p>The axolotl is a salamander that never grows up. It stays in its larval form for its whole life — gills out, fully functional, breeding happily as a perpetual juvenile. I named my theorem prover after it, because that is the design philosophy: a proof checker that stays small on purpose.</p>
+    <p>Every serious proof assistant — Lean, Coq, Agda — rests on a kernel, a small core of code that actually decides whether a proof is valid. Everything else is ergonomics. The folklore says a kernel can be tiny, and I wanted to know how tiny. Axolotl is my answer: about 250 lines of Rust for the kernel, another 130 for a frontend, zero dependencies. And it checks real proofs — including a proof that 2 + 2 = 4.</p>
+
+    <section id="terms">
+      <h2>Terms are six lines</h2>
+      <p>The entire language of axolotl fits in one enum:</p>
+      <div class="prompt-block"><pre><code>pub enum Term {
+    Var(usize),              // de Bruijn index
+    Lambda(TermRef),         // anonymous binder
+    Apply(TermRef, TermRef),
+    Pi(TermRef, TermRef),    // dependent function type
+    Type(usize),             // universe at a level
+    Ann(TermRef, TermRef),   // type annotation
+}</code></pre></div>
+      <p>Variables are <em>de Bruijn indices</em>: <code>Var(0)</code> is the nearest enclosing binder, <code>Var(1)</code> the next one out. No names, no capture, no α-renaming — substitution bugs in name-based systems are a genre of suffering that simply doesn't exist here. Everything is an <code>Rc</code>, so subterms are shared and cloned by pointer bump.</p>
+      <p>This is the full calculus: the lambda calculus plus dependent function types and a hierarchy of universes. Dependent types buy you the Curry–Howard correspondence for free — a <code>Pi</code> type is a universal statement, a lambda is a proof of it.</p>
+    </section>
+
+    <section id="nbe">
+      <h2>Evaluation without substitution</h2>
+      <p>A proof checker constantly has to answer: <em>are these two types the same?</em> And "the same" means the same <em>up to computation</em> — <code>2 + 2</code> and <code>4</code> must be recognized as equal. The classic approach is substitution-based reduction; the modern one, which axolotl uses, is <em>normalization by evaluation</em> (NbE).</p>
+      <p>The idea is to never substitute into syntax at all. Instead, terms evaluate into a separate world of <em>values</em>, where lambdas become closures capturing their environment:</p>
+      <div class="prompt-block"><pre><code>pub enum Value {
+    VLambda(Closure),
+    VPi(ValueRef, Closure),
+    VType(usize),
+    VNeutral(usize, Vec&lt;ValueRef&gt;),  // a stuck variable, plus its arguments
+}</code></pre></div>
+      <p>Evaluation is then almost insultingly small:</p>
+      <div class="prompt-block"><pre><code>pub fn eval(env: &amp;Env, term: &amp;TermRef) -&gt; ValueRef {
+    match term.as_ref() {
+        Term::Var(i) =&gt; env[env.len() - 1 - *i].clone(),
+        Term::Lambda(body) =&gt; vlambda(capture(env, body)),
+        Term::Apply(func, arg) =&gt; vapply(&amp;eval(env, func), eval(env, arg)),
+        Term::Pi(dom, cod) =&gt; vpi(eval(env, dom), capture(env, cod)),
+        Term::Type(level) =&gt; vtype(*level),
+        Term::Ann(term, _) =&gt; eval(env, term),
+    }
+}</code></pre></div>
+      <p>Two details worth pausing on. First, a <em>neutral</em> is a computation stuck on a free variable — a variable applied to some arguments that can't reduce further. Neutrals are what make open terms computable: under a binder, a variable isn't a value yet, so application just accumulates a spine of arguments. Second, <code>Ann</code> evaporates during evaluation. Annotations exist for the type checker, not the machine.</p>
+      <p>To compare values, or to print a normal form, you <em>read back</em> a value into a term, generating fresh variables as you go under binders. Terms count binders inward (indices); values count outward (levels). The dance between the two — <code>depth - 1 - level</code> in one direction, <code>len - 1 - index</code> in the other — is the fiddliest part of the whole codebase, and the entire price of avoiding names.</p>
+    </section>
+
+    <section id="checking">
+      <h2>Type checking in two directions</h2>
+      <p>Axolotl's checker is bidirectional, which is a fancy name for a simple discipline: some terms <em>produce</em> a type (<code>infer</code>), and some terms can only be <em>verified against</em> one (<code>check</code>). The one rule that shapes everything is that a bare lambda cannot be inferred — a function out of thin air doesn't know its own domain. Hence the <code>Ann</code> node: you annotate a lambda once, and from then on the checker can propagate.</p>
+      <p>Checking a lambda against a <code>Pi</code> is where the NbE machinery pays off. You don't substitute the argument type into the codomain; you apply the codomain's closure to a fresh neutral variable and recurse:</p>
+      <div class="prompt-block"><pre><code>(Term::Lambda(body), Value::VPi(domain, codomain)) =&gt; {
+    let fresh_var = fresh(env.len());
+    let body_ty = capply(codomain, fresh_var.clone());
+    check(&amp;extend(&amp;ctx, domain.clone()), &amp;extend(&amp;env, fresh_var),
+          body, &amp;body_ty)
+}</code></pre></div>
+      <p>The fallback case of <code>check</code> is where computation meets logic: infer a type, then ask whether the inferred type and the expected type are <em>convertible</em> — equal up to evaluation. Conversion checking is a structural walk over values, applying closures to fresh variables to peek under binders, with one cheap shortcut: if two values are the same <code>Rc</code> pointer, they're equal. Conversion is where <code>2 + 2 = 4</code> stops being an opinion and becomes a fact the kernel can certify.</p>
+    </section>
+
+    <section id="frontend">
+      <h2>The frontend: names, and a knob for opacity</h2>
+      <p>Nobody wants to write de Bruijn indices by hand (well — my test suite does, and I no longer recommend it). The frontend has a surface syntax with named binders, and a <code>resolve</code> pass that compiles names to indices by walking a scope. Two of my favorite tests in the project are nothing more than traps for the classic bugs of this pass: an inner binder shadowing an outer one, and a Pi domain being resolved <em>before</em> its own binder enters scope.</p>
+      <p>The frontend also has the project's most opinionated design: three kinds of top-level declaration, which differ in <em>what the rest of the world is allowed to see</em>.</p>
+      <ul class="material-links">
+        <li>An <strong>axiom</strong> declares a name and a type. It enters the environment as a bare neutral — permanently opaque, never reduces.</li>
+        <li>A <strong>definition</strong> is checked against its stated type, then enters the environment as its <em>evaluated value</em> — fully transparent, unfolds on demand.</li>
+        <li>A <strong>theorem</strong> is like a definition whose proof is checked and then <em>thrown away</em>: it enters as an opaque neutral. Proof irrelevance by construction — once certified, a proof's only job is to exist.</li>
+      </ul>
+      <p>One <code>drive</code> loop threads a scope, a typing context, and an environment through the declarations in lockstep, and the end-to-end test asserts the opacity contract directly: the axiom and the theorem sit in the environment as empty-spined neutrals, while the definition has visibly computed itself into an application of <code>succ</code> to <code>zero</code>.</p>
+    </section>
+
+    <section id="payoff">
+      <h2>The payoff: 2 + 2 = 4, certified</h2>
+      <p>The test suite is where the tiny kernel starts to feel like magic. There are no inductive types, so numbers are Church numerals — a natural number is its own iterator. And equality is the Leibniz definition: two things are equal when every property of one is a property of the other. Both fit in a few lines of raw terms, and both just work, because the kernel doesn't know or care that they are encodings.</p>
+      <p>Transitivity of equality is the first test, and its proof is a one-liner: given proofs of <code>x = y</code> and <code>y = z</code>, apply the second to the property <code>Eq x · z</code>, then apply the first to the result. Eight nested lambdas of de Bruijn arithmetic — unreadable, and certified:</p>
+      <div class="prompt-block"><pre><code>assert_eq!(certify(&amp;statement, &amp;proof), Ok(()));</code></pre></div>
+      <p>And the trophy test: state that <code>plus 2 2 = 4</code> of Church naturals, prove it with a single reflexivity constant, and let <code>certify</code> do the rest. Reflexivity only proves <code>t = t</code> — so the only reason the certificate is accepted is that conversion checking genuinely evaluates <code>plus 2 2</code> down to <code>4</code> inside the kernel. The arithmetic is performed by the type checker, during conversion, as a side effect of asking whether two types are equal. That's the whole Curry–Howard miracle in one <code>assert_eq!(&hellip;, Ok(()))</code>.</p>
+    </section>
+
+    <section id="honest">
+      <h2>What it can't do</h2>
+      <p>In the spirit of the animal: the missing features are the point, but let me name them. There is no parser yet — the <code>Parser</code> trait is a stub, and programs are built as Rust trees. There are no inductive types, no termination checking (so it's a consistent logic only if you don't loop the checker itself — an axolotl trusts you), and no implicit arguments or unification. Axiom means what it says: postulate anything and the kernel will believe you. Universes are a strict hierarchy with no cumulativity.</p>
+      <p>But everything it does do, it does in code you can read in one sitting, and the trust base is genuinely those 250 lines. That's what I wanted from the project: not a tool, but a demonstration that the gap between "the lambda calculus" and "a machine that certifies 2 + 2 = 4" is an afternoon of careful Rust — plus a lifetime supply of de Bruijn off-by-one errors, which the tests now remember so I don't have to.</p>
+    </section>
+
+    <footer>
+      <a href="../">← All posts</a> · <a href="https://github.com/Br0kenSmi1e">GitHub</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>
