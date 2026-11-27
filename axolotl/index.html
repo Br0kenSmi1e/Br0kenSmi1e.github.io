@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A dependently-typed proof checker in 600 lines of dependency-free Rust — de Bruijn indices, normalization by evaluation, and a kernel small enough to hold in your head.">
+  <meta name="description" content="Why can a program check a proof? On constructions, propositions as types, and the lambda-Pi calculus — with axolotl, a 600-line proof checker, as the exhibit.">
   <meta name="theme-color" content="#f8f6f1">
-  <title>Axolotl — A Proof Checker That Never Grows Up</title>
+  <title>Why a Program Can Check a Proof</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/style.css">
 </head>
@@ -14,90 +14,61 @@
 <div class="layout">
   <main id="article">
     <header class="hero" id="top">
-      <h1>Axolotl</h1>
-      <p class="byline"><time datetime="2026-11">November 2026</time> · A proof checker that never grows up</p>
+      <h1>Why a Program Can Check a Proof</h1>
+      <p class="byline"><time datetime="2026-11">November 2026</time></p>
     </header>
 
-    <p>The axolotl is a salamander that never grows up. It stays in its larval form for its whole life — gills out, fully functional, breeding happily as a perpetual juvenile. I named my theorem prover after it, because that is the design philosophy: a proof checker that stays small on purpose.</p>
-    <p>Every serious proof assistant — Lean, Coq, Agda — rests on a kernel, a small core of code that actually decides whether a proof is valid. Everything else is ergonomics. The folklore says a kernel can be tiny, and I wanted to know how tiny. Axolotl is my answer: about 250 lines of Rust for the kernel, another 130 for a frontend, zero dependencies. And it checks real proofs — including a proof that 2 + 2 = 4.</p>
+    <p>I recently built axolotl, a proof checker in about 600 lines of dependency-free Rust. But this post is not about the code. It's about the question the code answers — the question I actually wanted to understand by building it:</p>
+    <p><em>Why can a program check a proof at all?</em></p>
+    <p>A proof, after all, seems like the most human of artifacts: an argument, a chain of insight. Checking one feels like it should require understanding. And yet Lean, Coq, and Agda check proofs mechanically, and their trusted cores are small enough to audit by hand. What makes that possible? The answer is a sequence of three redefinitions, each one draining a little more of the mystery — until checking a proof has become arithmetic on syntax.</p>
 
-    <section id="terms">
-      <h2>Terms are six lines</h2>
-      <p>The entire language of axolotl fits in one enum:</p>
-      <div class="prompt-block"><pre><code>pub enum Term {
-    Var(usize),              // de Bruijn index
-    Lambda(TermRef),         // anonymous binder
-    Apply(TermRef, TermRef),
-    Pi(TermRef, TermRef),    // dependent function type
-    Type(usize),             // universe at a level
-    Ann(TermRef, TermRef),   // type annotation
-}</code></pre></div>
-      <p>Variables are <em>de Bruijn indices</em>: <code>Var(0)</code> is the nearest enclosing binder, <code>Var(1)</code> the next one out. No names, no capture, no α-renaming — substitution bugs in name-based systems are a genre of suffering that simply doesn't exist here. Everything is an <code>Rc</code>, so subterms are shared and cloned by pointer bump.</p>
-      <p>This is the full calculus: the lambda calculus plus dependent function types and a hierarchy of universes. Dependent types buy you the Curry–Howard correspondence for free — a <code>Pi</code> type is a universal statement, a lambda is a proof of it.</p>
+    <section id="constructions">
+      <h2>First redefinition: a proof is a construction</h2>
+      <p>Ask what a proof <em>is</em>, and the everyday answer is a sequence of sentences, each following from the last. But there is an older and deeper answer, due to Brouwer and made precise by Heyting and Kolmogorov: a proof is a <em>construction</em> — a method.</p>
+      <p>Under this reading, a proof of "if A then B" is not a string of words about A and B. It is a <em>method for turning any proof of A into a proof of B</em>. A proof of "for every number n, P(n)" is a method that, handed any particular n, hands back a proof of P(n). A proof of "A and B" is a pair of proofs; a proof of "A or B" is a proof of one side, together with a note saying which.</p>
+      <p>This is a genuine change of ontology. Sentences are inert; you can only read them. Constructions are <em>objects</em> — you can write them down, compose them, and, crucially, inspect them piece by piece. And an object built by explicit rules from explicit parts can be checked by rule-following alone. Insight is required to <em>find</em> the construction. To <em>verify</em> it, none is.</p>
     </section>
 
-    <section id="nbe">
-      <h2>Evaluation without substitution</h2>
-      <p>A proof checker constantly has to answer: <em>are these two types the same?</em> And "the same" means the same <em>up to computation</em> — <code>2 + 2</code> and <code>4</code> must be recognized as equal. The classic approach is substitution-based reduction; the modern one, which axolotl uses, is <em>normalization by evaluation</em> (NbE).</p>
-      <p>The idea is to never substitute into syntax at all. Instead, terms evaluate into a separate world of <em>values</em>, where lambdas become closures capturing their environment:</p>
-      <div class="prompt-block"><pre><code>pub enum Value {
-    VLambda(Closure),
-    VPi(ValueRef, Closure),
-    VType(usize),
-    VNeutral(usize, Vec&lt;ValueRef&gt;),  // a stuck variable, plus its arguments
-}</code></pre></div>
-      <p>Evaluation is then almost insultingly small:</p>
-      <div class="prompt-block"><pre><code>pub fn eval(env: &amp;Env, term: &amp;TermRef) -&gt; ValueRef {
-    match term.as_ref() {
-        Term::Var(i) =&gt; env[env.len() - 1 - *i].clone(),
-        Term::Lambda(body) =&gt; vlambda(capture(env, body)),
-        Term::Apply(func, arg) =&gt; vapply(&amp;eval(env, func), eval(env, arg)),
-        Term::Pi(dom, cod) =&gt; vpi(eval(env, dom), capture(env, cod)),
-        Term::Type(level) =&gt; vtype(*level),
-        Term::Ann(term, _) =&gt; eval(env, term),
-    }
-}</code></pre></div>
-      <p>Two details worth pausing on. First, a <em>neutral</em> is a computation stuck on a free variable — a variable applied to some arguments that can't reduce further. Neutrals are what make open terms computable: under a binder, a variable isn't a value yet, so application just accumulates a spine of arguments. Second, <code>Ann</code> evaporates during evaluation. Annotations exist for the type checker, not the machine.</p>
-      <p>To compare values, or to print a normal form, you <em>read back</em> a value into a term, generating fresh variables as you go under binders. Terms count binders inward (indices); values count outward (levels). The dance between the two — <code>depth - 1 - level</code> in one direction, <code>len - 1 - index</code> in the other — is the fiddliest part of the whole codebase, and the entire price of avoiding names.</p>
+    <section id="correspondence">
+      <h2>Second redefinition: a proposition is a type</h2>
+      <p>Here is the observation that makes the whole scheme go — the Curry–Howard correspondence. We already have a formalism whose entire purpose is to describe constructions and how they compose: the lambda calculus. And if you lay the proof-rules and the program-rules side by side, they are not merely similar. They are the same rules, written in two vocabularies:</p>
+      <table>
+        <thead>
+          <tr><th>Logic</th><th>Programming</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>proposition</td><td>type</td></tr>
+          <tr><td>proof</td><td>program</td></tr>
+          <tr><td>implication A → B</td><td>function type A → B</td></tr>
+          <tr><td>"for all x, P(x)"</td><td>dependent function type Π(x), P(x)</td></tr>
+          <tr><td>modus ponens</td><td>function application</td></tr>
+          <tr><td>assuming A, proving B</td><td>lambda abstraction</td></tr>
+          <tr><td>the proof is valid</td><td>the program is well-typed</td></tr>
+        </tbody>
+      </table>
+      <p>Read the last three rows slowly, because they are the mechanism. Modus ponens — from A and A → B, conclude B — is the shape of applying a function to an argument: the argument has type A, the function turns A into B, the result has type B. Assuming a hypothesis and deriving a conclusion is the shape of a lambda: a construction awaiting an input. So a proof checker doesn't need to know what a proof <em>means</em>. It only needs to verify that each composition is type-correct — and type checking is a local, mechanical affair: check the parts, check that the seams match, done.</p>
+      <p>This is the point where "checking a proof" stops being a judgment and becomes a procedure.</p>
     </section>
 
-    <section id="checking">
-      <h2>Type checking in two directions</h2>
-      <p>Axolotl's checker is bidirectional, which is a fancy name for a simple discipline: some terms <em>produce</em> a type (<code>infer</code>), and some terms can only be <em>verified against</em> one (<code>check</code>). The one rule that shapes everything is that a bare lambda cannot be inferred — a function out of thin air doesn't know its own domain. Hence the <code>Ann</code> node: you annotate a lambda once, and from then on the checker can propagate.</p>
-      <p>Checking a lambda against a <code>Pi</code> is where the NbE machinery pays off. You don't substitute the argument type into the codomain; you apply the codomain's closure to a fresh neutral variable and recurse:</p>
-      <div class="prompt-block"><pre><code>(Term::Lambda(body), Value::VPi(domain, codomain)) =&gt; {
-    let fresh_var = fresh(env.len());
-    let body_ty = capply(codomain, fresh_var.clone());
-    check(&amp;extend(&amp;ctx, domain.clone()), &amp;extend(&amp;env, fresh_var),
-          body, &amp;body_ty)
-}</code></pre></div>
-      <p>The fallback case of <code>check</code> is where computation meets logic: infer a type, then ask whether the inferred type and the expected type are <em>convertible</em> — equal up to evaluation. Conversion checking is a structural walk over values, applying closures to fresh variables to peek under binders, with one cheap shortcut: if two values are the same <code>Rc</code> pointer, they're equal. Conversion is where <code>2 + 2 = 4</code> stops being an opinion and becomes a fact the kernel can certify.</p>
+    <section id="pi">
+      <h2>Why it has to be Pi</h2>
+      <p>The plain lambda calculus corresponds to a logic that can only rearrange bare propositions — A → B, and nothing about anything. Real mathematics quantifies over <em>things</em>: for every number n, for every point p. And that requires something that sounds exotic but is conceptually inevitable: <em>a type must be allowed to mention a value</em>.</p>
+      <p>Consider "n + 0 = n". This is not one proposition; it is a family of propositions, one per natural number. A proof of "for all n, n + 0 = n" must be a construction that takes n as input and produces a proof whose <em>proposition</em> — whose type — depends on the very n it was given. A function whose return type varies with its input. That is exactly the Pi type, the single constructor the lambda-Pi calculus adds to the plain one.</p>
+      <p>So the Pi is not a feature bolted on for expressiveness. It is the precise point where the calculus acquires a semantics: without it you have a logic about nothing; with it, a logic about things. Axolotl's entire term language is six constructors, and this is the one doing the heavy lifting — everything else is lambda calculus and bookkeeping.</p>
     </section>
 
-    <section id="frontend">
-      <h2>The frontend: names, and a knob for opacity</h2>
-      <p>Nobody wants to write de Bruijn indices by hand (well — my test suite does, and I no longer recommend it). The frontend has a surface syntax with named binders, and a <code>resolve</code> pass that compiles names to indices by walking a scope. Two of my favorite tests in the project are nothing more than traps for the classic bugs of this pass: an inner binder shadowing an outer one, and a Pi domain being resolved <em>before</em> its own binder enters scope.</p>
-      <p>The frontend also has the project's most opinionated design: three kinds of top-level declaration, which differ in <em>what the rest of the world is allowed to see</em>.</p>
-      <ul class="material-links">
-        <li>An <strong>axiom</strong> declares a name and a type. It enters the environment as a bare neutral — permanently opaque, never reduces.</li>
-        <li>A <strong>definition</strong> is checked against its stated type, then enters the environment as its <em>evaluated value</em> — fully transparent, unfolds on demand.</li>
-        <li>A <strong>theorem</strong> is like a definition whose proof is checked and then <em>thrown away</em>: it enters as an opaque neutral. Proof irrelevance by construction — once certified, a proof's only job is to exist.</li>
-      </ul>
-      <p>One <code>drive</code> loop threads a scope, a typing context, and an environment through the declarations in lockstep, and the end-to-end test asserts the opacity contract directly: the axiom and the theorem sit in the environment as empty-spined neutrals, while the definition has visibly computed itself into an application of <code>succ</code> to <code>zero</code>.</p>
+    <section id="computation">
+      <h2>Third redefinition: computation is not a proof step</h2>
+      <p>If proofs are programs, then proofs <em>compute</em> — and this turns out to be the deepest practicality in the whole design. Ask: what should it take to prove that 2 + 2 = 4? Surely not a chain of lemmas. In a proof-as-program world, the proposition "2 + 2 = 4" is a type, and if you simply <em>run</em> the left side, it becomes "4 = 4". The reflexivity proof — the trivial construction that proves "t = t" for any t — therefore proves 2 + 2 = 4 as well, <em>because after computation they are the same type</em>.</p>
+      <p>The principle has a name: the Poincaré principle. A bare computation requires no proof; the machine just does it. Inside a checker, this is the rule of <em>conversion</em> (or definitional equality): two types that reduce to the same thing are the same type, full stop. It is what lets whole stretches of equational reasoning collapse into the checker silently evaluating both sides.</p>
+      <p>And it is why a kernel can certify arithmetic it was never taught. Axolotl has no numbers. Its tests define numbers as Church numerals — a number is its own iterator — and define equality à la Leibniz — two things are equal when every property of one is a property of the other. Neither is built in. Yet the checker certifies "2 + 2 = 4" and the transitivity of equality, because conversion makes the encodings <em>compute</em>, and computation is free. The type checker performs the arithmetic as a side effect of asking whether two types are equal.</p>
     </section>
 
-    <section id="payoff">
-      <h2>The payoff: 2 + 2 = 4, certified</h2>
-      <p>The test suite is where the tiny kernel starts to feel like magic. There are no inductive types, so numbers are Church numerals — a natural number is its own iterator. And equality is the Leibniz definition: two things are equal when every property of one is a property of the other. Both fit in a few lines of raw terms, and both just work, because the kernel doesn't know or care that they are encodings.</p>
-      <p>Transitivity of equality is the first test, and its proof is a one-liner: given proofs of <code>x = y</code> and <code>y = z</code>, apply the second to the property <code>Eq x · z</code>, then apply the first to the result. Eight nested lambdas of de Bruijn arithmetic — unreadable, and certified:</p>
-      <div class="prompt-block"><pre><code>assert_eq!(certify(&amp;statement, &amp;proof), Ok(()));</code></pre></div>
-      <p>And the trophy test: state that <code>plus 2 2 = 4</code> of Church naturals, prove it with a single reflexivity constant, and let <code>certify</code> do the rest. Reflexivity only proves <code>t = t</code> — so the only reason the certificate is accepted is that conversion checking genuinely evaluates <code>plus 2 2</code> down to <code>4</code> inside the kernel. The arithmetic is performed by the type checker, during conversion, as a side effect of asking whether two types are equal. That's the whole Curry–Howard miracle in one <code>assert_eq!(&hellip;, Ok(()))</code>.</p>
-    </section>
-
-    <section id="honest">
-      <h2>What it can't do</h2>
-      <p>In the spirit of the animal: the missing features are the point, but let me name them. There is no parser yet — the <code>Parser</code> trait is a stub, and programs are built as Rust trees. There are no inductive types, no termination checking (so it's a consistent logic only if you don't loop the checker itself — an axolotl trusts you), and no implicit arguments or unification. Axiom means what it says: postulate anything and the kernel will believe you. Universes are a strict hierarchy with no cumulativity.</p>
-      <p>But everything it does do, it does in code you can read in one sitting, and the trust base is genuinely those 250 lines. That's what I wanted from the project: not a tool, but a demonstration that the gap between "the lambda calculus" and "a machine that certifies 2 + 2 = 4" is an afternoon of careful Rust — plus a lifetime supply of de Bruijn off-by-one errors, which the tests now remember so I don't have to.</p>
+    <section id="foundation">
+      <h2>What has to hold for this to work</h2>
+      <p>The edifice rests on one load-bearing property: <em>well-typed constructions must actually deliver</em>. Every well-typed program must be safe to run — application never gets stuck, and, for the logic to be sound, every proof must terminate. A looping program inhabits any type; if non-termination were allowed as a proof, every proposition would be "provable" and the correspondence would collapse into triviality. This is why real kernels are picky in ways that feel pedantic — termination checking, positivity conditions, universe hierarchies that forbid <code>Type : Type</code>. Each restriction is there to protect the single property on which everything else stands.</p>
+      <p>Axolotl skips most of that. It checks types in the lambda-Pi calculus and nothing more: no termination checker, no inductive types, no universes beyond a bare hierarchy. So it is a demonstration of the principle, not a foundation you'd trust with the Kepler conjecture. But the demonstration is the point. The three redefinitions — proofs are constructions, propositions are types, computation is free — are not abstractions floating above the code. In axolotl each one has a home you can point to: the typing rules, the Pi constructor, the conversion check. About 250 lines of kernel, and the answer to "why can a program check a proof" fits inside them.</p>
+      <p>The axolotl, the animal, is a salamander that never grows up: it keeps its larval form its whole life, fully functional, never becoming the adult it could be. I can think of worse aspirations for a proof checker.</p>
     </section>
 
     <footer>
