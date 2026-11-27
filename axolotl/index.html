@@ -70,9 +70,9 @@
 
     <section id="axolotl">
       <h2>Axolotl, the artifact</h2>
-      <p>Axolotl is these ideas as running Rust: about 600 lines, zero dependencies. The term language is the six constructors above. The checker is the rules above — variables and applications report their types, lambdas are checked against theirs, and whenever two types must agree, both sides are evaluated and compared. The tower is one line: <code>Typeᵢ : Typeᵢ₊₁</code>. There are no inductive types and no recursion, so termination needs no enforcing — what you trust is exactly what you've just read.</p>
-      <p>Nothing mathematical is built in. The test suite defines numbers as their own iterators and equality as "every property of one is a property of the other" — both are just terms — and then asks the kernel to certify 2 + 2 = 4, the proof being a single reflexivity constant. The certificate is accepted because comparing the two sides makes the checker compute: <code>plus 2 2</code> and <code>4</code> evaluate to the same value. The type checker does the arithmetic, as a side effect of an equality question.</p>
-      <p>It is named for the salamander that never grows up: fully functional in its larval form, and small on purpose.</p>
+      <p>Axolotl is these ideas as running Rust — about 600 lines, zero dependencies — and two facts about it turn out to be written in its name.</p>
+      <p><strong>It is the theoretical minimum, and stays there.</strong> Six constructors, the rules above, and nothing else: no numbers, no equality, no recursion built in. Axolotls, the animals, are neotenic — they live their whole lives in larval form, fully functional, never becoming the adult they could be. The checker is neotenic too: a proof theory kept at its juvenile stage, deliberately never growing up.</p>
+      <p><strong>Its mathematics is user-declared.</strong> Building in numbers would be deciding what mathematics is; axolotl decides nothing. Every fact enters as an explicit declaration — an axiom or a definition — and is checked like everything else. The animal wears this in the first two letters of its name: AX-, as in axioms.</p>
     </section>
 
     <footer>
