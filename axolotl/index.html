@@ -59,7 +59,11 @@
     <section id="why-checker">
       <h2>Why a checker, and its one guardrail</h2>
       <p>The correspondence says what a proof <em>is</em> — a program of the right type. But given a claim and a candidate, something still has to verify that the candidate actually has the claimed type. The checker is that verification.</p>
-      <p>Its rules are the logic's rules — the lambda and application rules above. But one extra rule answers to nothing but consistency. In this language types are values too — that is what dependency means — so we can ask: what is the type of a type? The tempting answer, <code>Type : Type</code>, is fatal: a type containing itself rebuilds Russell's paradox at the type level, and from it a proof of anything. So universes form a tower — <code>Type₀ : Type₁ : Type₂ : …</code> — each containing only smaller things, never itself. And the tower pays a dividend: with it, and with no way to write general recursion, every well-typed term terminates, so the checker's "evaluate and compare" always finishes.</p>
+      <p>Its rules are the logic's rules — the lambda and application rules above. But one extra rule answers to nothing but consistency. In this language types are values too — that is what dependency means — so we can ask: what is the type of a type? The tempting answer, <code>Type : Type</code>, is fatal: a type containing itself rebuilds Russell's paradox at the type level, and from it a proof of anything. So universes form a tower:</p>
+      <div class="prompt-block"><pre><code>Nat  :  Type₀  :  Type₁  :  Type₂  :  Type₃  :  …
+
+ each universe contains only what is smaller — never itself</code></pre></div>
+      <p>And the tower pays a dividend: with it, and with no way to write general recursion, every well-typed term terminates, so the checker's "evaluate and compare" always finishes.</p>
       <p>What lies outside the rules: axioms. Postulate anything and the kernel believes you. The checker guards the derivations, not the premises.</p>
     </section>
 
