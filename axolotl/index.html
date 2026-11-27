@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Why can a program check a proof? On constructions, propositions as types, and the lambda-Pi calculus — with axolotl, a 600-line proof checker, as the exhibit.">
+  <meta name="description" content="Isn't proving just rewriting on syntax trees? No — provably. But checking is, and that is the design. On why a program can check a proof, with axolotl, a 600-line proof checker, as the exhibit.">
   <meta name="theme-color" content="#f8f6f1">
   <title>Why a Program Can Check a Proof</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
@@ -20,54 +20,74 @@
 
     <p>I recently built axolotl, a proof checker in about 600 lines of dependency-free Rust. But this post is not about the code. It's about the question the code answers — the question I actually wanted to understand by building it:</p>
     <p><em>Why can a program check a proof at all?</em></p>
-    <p>A proof, after all, seems like the most human of artifacts: an argument, a chain of insight. Checking one feels like it should require understanding. And yet Lean, Coq, and Agda check proofs mechanically, and their trusted cores are small enough to audit by hand. What makes that possible? The answer is a sequence of three redefinitions, each one draining a little more of the mystery — until checking a proof has become arithmetic on syntax.</p>
+    <p>I came to this question with a prior, and the prior was wrong in an instructive way. My model of theorem proving was: pattern matching plus rewriting on syntax trees. This post is the story of exactly where that model breaks — provably, not philosophically — and of the twist at the end, where the broken model turns out to be right after all, one level down. That twist is the reason proof checkers can exist.</p>
 
-    <section id="constructions">
-      <h2>First redefinition: a proof is a construction</h2>
-      <p>Ask what a proof <em>is</em>, and the everyday answer is a sequence of sentences, each following from the last. But there is an older and deeper answer, due to Brouwer and made precise by Heyting and Kolmogorov: a proof is a <em>construction</em> — a method.</p>
-      <p>Under this reading, a proof of "if A then B" is not a string of words about A and B. It is a <em>method for turning any proof of A into a proof of B</em>. A proof of "for every number n, P(n)" is a method that, handed any particular n, hands back a proof of P(n). A proof of "A and B" is a pair of proofs; a proof of "A or B" is a proof of one side, together with a note saying which.</p>
-      <p>This is a genuine change of ontology. Sentences are inert; you can only read them. Constructions are <em>objects</em> — you can write them down, compose them, and, crucially, inspect them piece by piece. And an object built by explicit rules from explicit parts can be checked by rule-following alone. Insight is required to <em>find</em> the construction. To <em>verify</em> it, none is.</p>
+    <section id="guess">
+      <h2>The obvious guess: proving is rewriting</h2>
+      <p>First, a precise definition, because everything hinges on it:</p>
+      <blockquote><p><strong>Rewrite step:</strong> you have an equation you <em>already know</em> — a definition or a previously proven lemma — and you replace a piece of your formula with an equal piece.</p></blockquote>
+      <p>Under this definition, some proofs really are pure rewriting. Expanding (a + b)² = a² + 2ab + b² means: distribute, collect, done — every step replaces a subexpression by an equal one, justified by an algebra law you already had. And this isn't just loosely true of algebra: Birkhoff's completeness theorem says an equation is provable in equational logic <em>if and only if</em> it's derivable by substituting equals for equals. For pure equations, a proof literally is a rewrite sequence.</p>
+      <p>So the guess is not naive. It's a theorem — about a small fragment of logic. The question is what happens outside that fragment.</p>
     </section>
 
-    <section id="correspondence">
-      <h2>Second redefinition: a proposition is a type</h2>
-      <p>Here is the observation that makes the whole scheme go — the Curry–Howard correspondence. We already have a formalism whose entire purpose is to describe constructions and how they compose: the lambda calculus. And if you lay the proof-rules and the program-rules side by side, they are not merely similar. They are the same rules, written in two vocabularies:</p>
+    <section id="stuck">
+      <h2>Stuck at step zero</h2>
+      <p>Prove: <em>for every natural number n, n + 0 = n.</em> Your entire toolbox is the definition of addition:</p>
+      <div class="prompt-block"><pre><code>(rule 1)  0 + m       =  m
+(rule 2)  succ(k) + m =  succ(k + m)</code></pre></div>
+      <p>Now try to rewrite the goal <code>n + 0 = n</code>, where <code>n</code> is an arbitrary variable. Rule 1 matches <code>0 + m</code> — zero on the <em>left</em>; our zero is on the right. Rule 2 matches <code>succ(k) + m</code> — but our left argument is a bare variable, not a successor. There is not a single legal rewrite. Not "hard to find" — <em>none exists</em>. A pure rewriting system is stuck at step zero on one of the first theorems of arithmetic.</p>
+      <p>Yet the theorem is provable — by induction, a move that is not a rewrite. Induction says: prove it for zero, then prove that <em>if</em> it holds for k, <em>then</em> it holds for succ(k). Look closely at the "if" part: the logic hands you a brand-new equation, <code>k + 0 = k</code>, <em>out of nowhere</em>. No equation you had contains it; no rewrite produced it. It is a fresh assumption, manufactured by a rule of the logic. Only then does rewriting finish the job: <code>succ(k) + 0 → succ(k + 0) → succ(k)</code>, the last step spending the gift.</p>
+      <p>Other moves break the rewrite model even earlier, because there is nothing to rewrite <em>at all</em>. Prove "if P, then (if Q, then P)": the formula contains no equals sign, no subexpressions to simplify. The proof is "suppose P; suppose Q; done — P is what I had." The move <em>suppose</em> doesn't transform the formula; it changes the rules of the game mid-play, adding a usable fact to your toolbox and discharging it later. Same story for witnesses (to prove "there exists x such that P(x)", you must <em>produce</em> a term — nothing in the goal's syntax tells you which) and for case splits (the proof forks into branches).</p>
+      <p>Even the heartland of the rewriting intuition fights back: orient <code>x + y = y + x</code> either way and it loops forever, <code>a + b → b + a → a + b → …</code>. Making rewriting work at all on equations requires an ordering that forces every step downhill — the idea at the core of superposition, the calculus inside modern automated provers.</p>
+      <p>So the accurate picture of a proof is:</p>
+      <div class="prompt-block"><pre><code>rewrites           replace equals by equals — the only purely syntactic row
++ assume/discharge   temporarily pretend things       (for → and ¬)
++ fresh variables    let n be arbitrary               (for ∀)
++ witnesses          exhibit a specific x             (for ∃)
++ case splits        prove under A, then under ¬A     (for ∨)
++ induction          manufacture new hypotheses       (for ℕ, lists, trees)</code></pre></div>
+      <p>Every row below the first creates structure — assumptions, variables, witnesses, branches — instead of rearranging existing syntax. And the insufficiency is not a design flaw of particular systems but a theorem: rewriting is complete for equations (Birkhoff), full logic is provably more expressive than equations, so no strengthening of pure rewriting can ever cover it. Which is reassuring in a way: if proving <em>were</em> just rewriting, mathematics would be mechanical, and considerably less fun.</p>
+    </section>
+
+    <section id="revenge">
+      <h2>The revenge: checking comes back to rewriting</h2>
+      <p>Now the twist, and the actual answer to the title's question. Type theory's move is to make the <em>proof itself</em> a piece of data — a program — in which every structure-creating move becomes a programming construct:</p>
       <table>
         <thead>
-          <tr><th>Logic</th><th>Programming</th></tr>
+          <tr><th>Proof move</th><th>Program construct</th></tr>
         </thead>
         <tbody>
-          <tr><td>proposition</td><td>type</td></tr>
-          <tr><td>proof</td><td>program</td></tr>
-          <tr><td>implication A → B</td><td>function type A → B</td></tr>
-          <tr><td>"for all x, P(x)"</td><td>dependent function type Π(x), P(x)</td></tr>
-          <tr><td>modus ponens</td><td>function application</td></tr>
-          <tr><td>assuming A, proving B</td><td>lambda abstraction</td></tr>
-          <tr><td>the proof is valid</td><td>the program is well-typed</td></tr>
+          <tr><td>"suppose P…"</td><td>lambda: <code>λ p ↦ …</code></td></tr>
+          <tr><td>use an implication (modus ponens)</td><td>function application</td></tr>
+          <tr><td>"let n be arbitrary" (∀)</td><td>a function taking a value</td></tr>
+          <tr><td>exhibit a witness (∃)</td><td>a pair: (witness, proof it works)</td></tr>
+          <tr><td>case split</td><td>pattern match</td></tr>
+          <tr><td>induction</td><td>recursion</td></tr>
         </tbody>
       </table>
-      <p>Read the last three rows slowly, because they are the mechanism. Modus ponens — from A and A → B, conclude B — is the shape of applying a function to an argument: the argument has type A, the function turns A into B, the result has type B. Assuming a hypothesis and deriving a conclusion is the shape of a lambda: a construction awaiting an input. So a proof checker doesn't need to know what a proof <em>means</em>. It only needs to verify that each composition is type-correct — and type checking is a local, mechanical affair: check the parts, check that the seams match, done.</p>
-      <p>This is the point where "checking a proof" stops being a judgment and becomes a procedure.</p>
-    </section>
-
-    <section id="pi">
-      <h2>Why it has to be Pi</h2>
-      <p>The plain lambda calculus corresponds to a logic that can only rearrange bare propositions — A → B, and nothing about anything. Real mathematics quantifies over <em>things</em>: for every number n, for every point p. And that requires something that sounds exotic but is conceptually inevitable: <em>a type must be allowed to mention a value</em>.</p>
-      <p>Consider "n + 0 = n". This is not one proposition; it is a family of propositions, one per natural number. A proof of "for all n, n + 0 = n" must be a construction that takes n as input and produces a proof whose <em>proposition</em> — whose type — depends on the very n it was given. A function whose return type varies with its input. That is exactly the Pi type, the single constructor the lambda-Pi calculus adds to the plain one.</p>
-      <p>So the Pi is not a feature bolted on for expressiveness. It is the precise point where the calculus acquires a semantics: without it you have a logic about nothing; with it, a logic about things. Axolotl's entire term language is six constructors, and this is the one doing the heavy lifting — everything else is lambda calculus and bookkeeping.</p>
+      <p>Read the table both ways, because both directions matter. Left to right: any proof — with all its assumptions, witnesses, and inductions — can be <em>written down</em> as a program, a finite object you can hand to a machine. The proof of "if P then (if Q then P)", which contained no rewriting at all, becomes the program <code>λ p q ↦ p</code>. The proof of <code>n + 0 = n</code> becomes a recursive function whose recursive call is the induction hypothesis — the "gift out of nowhere" is now just the argument the function receives.</p>
+      <p>Right to left is the Curry–Howard correspondence proper: the program's <em>type</em> is the proposition it proves, and a valid proof is exactly a well-typed program. Modus ponens and function application are not analogous; they are the same rule in two vocabularies.</p>
+      <p>This is why a program can check a proof. Checking is no longer "follow a chain of insight"; it is type checking — a local, mechanical procedure: check each part, check that the seams match. And here the rewriting intuition gets its revenge: a type checker constantly has to ask <em>are these two types the same?</em> — the proof claims to return evidence for <code>succ(k) + 0 = succ(k)</code> and actually returns evidence for <code>succ(k + 0) = succ(k)</code> — and it answers by <em>rewriting</em>: unfold definitions, reduce both sides, compare normal forms. So the engine at the bottom of the trusted kernel is precisely the match-and-reduce-on-syntax-trees machine from my original, wrong model of proving. It wasn't wrong; it was one level too high. Finding a proof needs search, witnesses, induction. Checking one needs a type checker, and the type checker's heart is a rewriter.</p>
     </section>
 
     <section id="computation">
-      <h2>Third redefinition: computation is not a proof step</h2>
-      <p>If proofs are programs, then proofs <em>compute</em> — and this turns out to be the deepest practicality in the whole design. Ask: what should it take to prove that 2 + 2 = 4? Surely not a chain of lemmas. In a proof-as-program world, the proposition "2 + 2 = 4" is a type, and if you simply <em>run</em> the left side, it becomes "4 = 4". The reflexivity proof — the trivial construction that proves "t = t" for any t — therefore proves 2 + 2 = 4 as well, <em>because after computation they are the same type</em>.</p>
-      <p>The principle has a name: the Poincaré principle. A bare computation requires no proof; the machine just does it. Inside a checker, this is the rule of <em>conversion</em> (or definitional equality): two types that reduce to the same thing are the same type, full stop. It is what lets whole stretches of equational reasoning collapse into the checker silently evaluating both sides.</p>
-      <p>And it is why a kernel can certify arithmetic it was never taught. Axolotl has no numbers. Its tests define numbers as Church numerals — a number is its own iterator — and define equality à la Leibniz — two things are equal when every property of one is a property of the other. Neither is built in. Yet the checker certifies "2 + 2 = 4" and the transitivity of equality, because conversion makes the encodings <em>compute</em>, and computation is free. The type checker performs the arithmetic as a side effect of asking whether two types are equal.</p>
+      <h2>Proof by computation</h2>
+      <p>Once checking is rewriting, an extreme regime becomes possible: some theorems need no clever moves at all, because the entire proof is the machine running. In Lean, <code>theorem : 17 + 25 = 42 := rfl</code> — the proof is the reflexivity constant, "true by computation"; the kernel reduces both sides to the same numeral and accepts. This is the Poincaré principle — a bare computation requires no proof steps — pushed as far as it goes. It scales: the Coq proof of the Four Color Theorem is mostly one gigantic, kernel-checked computation; decision procedures like <code>ring</code> and <code>omega</code> work by translating goals into a form where computation decides them. The technique is called proof by reflection: instead of writing a long rewrite sequence by hand, you write a program and let <em>running it</em> be the proof.</p>
+      <p>Axolotl is this regime, miniaturized to its essence. It has no numbers — its tests define them as Church numerals, a number being its own iterator — and no equality — defined à la Leibniz, two things being equal when every property of one is a property of the other. Then the test suite asks the kernel to certify that 2 + 2 = 4, with a proof consisting of the single constant <code>refl</code>. The only reason that certificate is accepted is that the checker's conversion rule genuinely evaluates <code>plus 2 2</code> down to <code>4</code> while comparing two types. The arithmetic is performed by the type checker, during rewriting, as a side effect of an equality question. When <code>certify(&amp;statement, &amp;proof)</code> returns <code>Ok(())</code>, the whole argument of this post has just executed.</p>
     </section>
 
-    <section id="foundation">
-      <h2>What has to hold for this to work</h2>
-      <p>The edifice rests on one load-bearing property: <em>well-typed constructions must actually deliver</em>. Every well-typed program must be safe to run — application never gets stuck, and, for the logic to be sound, every proof must terminate. A looping program inhabits any type; if non-termination were allowed as a proof, every proposition would be "provable" and the correspondence would collapse into triviality. This is why real kernels are picky in ways that feel pedantic — termination checking, positivity conditions, universe hierarchies that forbid <code>Type : Type</code>. Each restriction is there to protect the single property on which everything else stands.</p>
-      <p>Axolotl skips most of that. It checks types in the lambda-Pi calculus and nothing more: no termination checker, no inductive types, no universes beyond a bare hierarchy. So it is a demonstration of the principle, not a foundation you'd trust with the Kepler conjecture. But the demonstration is the point. The three redefinitions — proofs are constructions, propositions are types, computation is free — are not abstractions floating above the code. In axolotl each one has a home you can point to: the typing rules, the Pi constructor, the conversion check. About 250 lines of kernel, and the answer to "why can a program check a proof" fits inside them.</p>
+    <section id="loadbearing">
+      <h2>What has to hold</h2>
+      <p>The edifice rests on one load-bearing property: well-typed constructions must actually deliver. A looping program inhabits any type, so if non-termination counted as proof, every proposition would be provable and the correspondence would collapse into triviality. This is why real kernels are pedantic — termination checking, positivity conditions, universe hierarchies forbidding <code>Type : Type</code> — each restriction guarding the same property. Axolotl skips almost all of it: it checks types in the lambda-Pi calculus and trusts you not to loop it. A demonstration of the principle, not a foundation.</p>
+      <p>But the demonstration is the point. The full picture, earned the long way around:</p>
+      <div class="prompt-block"><pre><code>FINDING a proof:   search, witnesses, induction, creativity
+                   — provably NOT rewriting; undecidable
+                          │  produces a proof term (a program)
+                          ▼
+CHECKING a proof:  type checking, every equality question
+                   settled by reduction
+                   — IS rewriting; mechanical; fits in a small kernel</code></pre></div>
+      <p>So: "proving is just rewriting" is false for finding, provably, and "checking a proof is mostly rewriting" is true by design — the central design idea of type-theoretic proof assistants, and the entire reason a few hundred lines of Rust can certify 2 + 2 = 4 without being taught arithmetic.</p>
       <p>The axolotl, the animal, is a salamander that never grows up: it keeps its larval form its whole life, fully functional, never becoming the adult it could be. I can think of worse aspirations for a proof checker.</p>
     </section>
 
