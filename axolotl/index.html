@@ -57,22 +57,18 @@
 
 
     <section id="how">
-      <h2>How: into the machine, through the checker</h2>
-      <p>The ideas so far say <em>what</em> must exist. Three small mechanisms make it run — and they are the whole of axolotl's architecture:</p>
-      <div class="prompt-block"><pre><code>surface syntax (names)
-        |  resolve: every name becomes a position
-        v
-kernel terms (de Bruijn indices)
+      <h2>How: inside the kernel</h2>
+      <p>The ideas so far say <em>what</em> must exist. The kernel is two mechanisms that make it run:</p>
+      <div class="prompt-block"><pre><code>a term, claiming a type
         |  infer / check: the rules, executed
         v
 conversion: are these two types equal?
         |  evaluate both sides, compare
         v
 Ok, or a type error</code></pre></div>
-      <p><strong>Resolve.</strong> Humans write names; the kernel wants positions. So before anything is checked, every name is replaced by the number of binders between its use and its introduction: <code>fn(x){ fn(y){ x } }</code> becomes <code>fn fn #1</code>. After this pass names no longer exist, and with them goes a whole genre of bugs — capture, shadowing, renaming — that name-based checkers must constantly defend against.</p>
       <p><strong>Infer, or check.</strong> The rules from the previous section, executed — in two modes. Some terms <em>report</em> their type: a variable reports the assumption it came from; an application reports the function's return type. But a bare lambda cannot report its own domain — it can only be <em>checked</em> against an expected function type, which is what tells it the domain. So the algorithm infers where the term speaks for itself and checks where it must be told; one annotation at the seam, and everything else propagates. No search anywhere.</p>
       <p><strong>Evaluate to compare.</strong> Checking keeps asking "are these two types equal?" — and equal means equal <em>after computation</em>. So the checker evaluates both sides: functions become closures awaiting input, a variable with no value yet stalls into a frozen computation, and the results are compared once nothing more can run. This is the only place the machine ever executes code — and the reason a single reflexivity constant settles 2 + 2 = 4: <code>plus 2 2</code> and <code>4</code> evaluate to the same thing.</p>
-      <p>That pipeline is axolotl entire: the first arrow is the frontend, and everything below it is a 250-line kernel.</p>
+      <p>Those two mechanisms are the whole kernel: about 250 lines.</p>
     </section>
 
     <footer>
