@@ -15,7 +15,7 @@
   <main id="article">
     <header class="hero" id="top">
       <h1>Axolotl</h1>
-      <p class="byline"><time datetime="2026-11">November 2026</time> · A proof checker that never grows up</p>
+      <p class="byline"><time datetime="2026-11">November 2026</time></p>
     </header>
 
     <p>I recently built axolotl, a proof checker in about 600 lines of dependency-free Rust. But this post is not about the code. It's about the question the code answers — the question I actually wanted to understand by building it:</p>
@@ -24,16 +24,21 @@
 
     <section id="logic-is-type-checking">
       <h2>Logic is type checking</h2>
-      <p>Start with a question that sounds too philosophical to matter: <em>what is a proposition?</em> Take the word "proof" seriously, and a proposition is a specification that says what counts as evidence for it. Every logical connective is literally defined this way:</p>
-      <ul class="material-links">
-        <li>"A <em>and</em> B" — evidence is evidence of A together with evidence of B. A pair.</li>
-        <li>"A <em>implies</em> B" — evidence is a method that turns any evidence of A into evidence of B. A function.</li>
-        <li>"<em>false</em>" — evidence cannot exist. The empty specification.</li>
-      </ul>
-      <p>Now ask a second question, from the other side: <em>what is a type?</em> Forget programming for a moment — a type is a specification that says what counts as a member of it. The natural numbers are "zero, successor of zero, and so on." A function type is "things you can call with an A to get back a B."</p>
-      <p>Put the two answers side by side: a specification of evidence, and a specification of members. <strong>The same kind of thing, named twice.</strong> So read the first list again as types: "and" is a pair type, "implies" is a function type, "false" is an empty type. A proof of a proposition is an element of the type. A true proposition is a type that has an element; a false one is a type that happens to be empty.</p>
-      <p>And now the machine enters. "Is this a proof of the proposition?" has become "is this an element of the type?" — a mechanical question. Every shape of evidence has exactly one way to check it: to check a function as evidence of an implication, assume evidence of A and check that the body produces evidence of B; to check a function call, verify the argument's type matches the domain. Each check is local, the evidence announces its own shape, and there is no search, no insight, no judgment. That is why a small, dumb machine can do it — and why it can be trusted: it never guesses, it only verifies. An example, in full: "if A, then A" is proved by the identity function — give it evidence of A, it hands the same evidence back. The proof is three characters long, and a computer can confirm it.</p>
-      <p>The idea has a name — Curry–Howard — and a slogan: <em>propositions are types, proofs are programs</em>. The slogan is easy to memorize and hard to feel. The version that made it click for me is the one above: evidence and membership are the same notion, so logic and type checking were never two things.</p>
+      <p>A proposition is a specification of what counts as <em>evidence</em> for it. A type is a specification of what counts as a <em>member</em> of it. These are the same notion — so every logical construct is a type:</p>
+      <table>
+        <thead>
+          <tr><th>Logic</th><th>Type</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>"A and B"</td><td>pair type (A, B)</td></tr>
+          <tr><td>"A implies B"</td><td>function type A → B</td></tr>
+          <tr><td>"for all x, P(x)"</td><td>function whose return type depends on x</td></tr>
+          <tr><td>false</td><td>the empty type</td></tr>
+          <tr><td>proof of P</td><td>an element of P</td></tr>
+          <tr><td>P is true</td><td>P has an element</td></tr>
+        </tbody>
+      </table>
+      <p>So "is this a proof of P?" becomes "is this an element of type P?" — a mechanical question. Each shape of evidence has exactly one way to check it, every check is local, and there is no search. Example: "if A, then A" is proved by the identity function; checking that proof is checking one function body. This is the Curry–Howard correspondence: propositions are types, proofs are programs — and a proof checker is a type checker.</p>
     </section>
 
     <section id="why-lambda-pi">
