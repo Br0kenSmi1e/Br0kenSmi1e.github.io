@@ -52,7 +52,14 @@
       <p><strong>Dependency.</strong> But those two rules only build propositions about nothing: in <code>A → B</code>, the B is fixed before any input arrives. Real statements quantify over <em>things</em> — ∀n. n + 0 = n is a family of propositions, one per number — so evidence must be a function whose return type is <em>computed from its argument</em>:</p>
       <div class="prompt-block"><pre><code>proof : (n : Nat) -> (n + 0 = n)
                      ^^^^^^^^^^^ the return type mentions the input</code></pre></div>
-      <p>That single capability — types mentioning values — is the Pi type, the point where the logic acquires a subject matter. And with that the design is done: lambda is "assume", application is "use", Pi is "for all". Axolotl's entire term language is six constructors, and these are why six suffice. What remains is engineering: how the machine evaluates, compares, and checks them.</p>
+      <p>That single capability — types mentioning values — is the Pi type, the point where the logic acquires a subject matter. And with that the design is done: lambda is "assume", application is "use", Pi is "for all". Axolotl's entire term language is six constructors, and these are why six suffice.</p>
+    </section>
+
+    <section id="axolotl">
+      <h2>Axolotl, the artifact</h2>
+      <p>Axolotl is these ideas as running Rust: about 600 lines, zero dependencies. The term language is the six constructors above. The checker is the rules above — variables and applications report their types, lambdas are checked against theirs, and whenever two types must agree, both sides are evaluated and compared. The tower is one line: <code>Typeᵢ : Typeᵢ₊₁</code>. There are no inductive types and no recursion, so termination needs no enforcing — what you trust is exactly what you've just read.</p>
+      <p>Nothing mathematical is built in. The test suite defines numbers as their own iterators and equality as "every property of one is a property of the other" — both are just terms — and then asks the kernel to certify 2 + 2 = 4, the proof being a single reflexivity constant. The certificate is accepted because comparing the two sides makes the checker compute: <code>plus 2 2</code> and <code>4</code> evaluate to the same value. The type checker does the arithmetic, as a side effect of an equality question.</p>
+      <p>It is named for the salamander that never grows up: fully functional in its larval form, and small on purpose.</p>
     </section>
 
 
