@@ -44,9 +44,15 @@
     <section id="why-lambda-pi">
       <h2>Why the lambda-Pi calculus?</h2>
       <p>The table is a promise; now the language has to keep it. What machinery does it take to <em>build</em> and <em>check</em> evidence? The logic itself dictates the answer, twice.</p>
-      <p><strong>Functions.</strong> Evidence for <em>A</em> → <em>B</em> is a method. So we need to build methods — assume evidence of A, derive evidence of B, done; that is a lambda — and to use them: feed a method evidence of A, get evidence of B; that is an application, and it is modus ponens. Variables are the assumptions currently in play. Variables, lambdas, applications — that is the lambda calculus. Not one choice among many: the minimal machinery of assuming and concluding.</p>
-      <p><strong>Dependency.</strong> Plain functions handle bare implications — propositions about nothing. But mathematics quantifies over <em>things</em>: ∀n. n + 0 = n is not one proposition but a family, one per number. Evidence for it must be a function whose <em>return type depends on the input</em>: feed it 3, get evidence of 3 + 0 = 3. That single capability — types mentioning values — is the Pi type, the point where the logic acquires a subject matter.</p>
-      <p>That is the whole design: lambda is "assume", application is "use", Pi is "for all". Axolotl's entire term language is six constructors, and these are why six suffice. What remains is engineering: how the machine evaluates, compares, and checks them.</p>
+      <p><strong>Functions.</strong> Evidence for <em>A</em> → <em>B</em> is a method, so we need to build methods and use them. Write down the two rules for doing that, and something uncanny happens:</p>
+      <div class="prompt-block"><pre><code> x : A ⊢ b : B                  f : A → B    a : A
+───────────────── (lambda)     ────────────────────── (application)
+ ⊢ λx.b : A → B                         f a : B</code></pre></div>
+      <p>Read them aloud as logic: the first is "assume A, derive B, conclude A → B" — implication introduction. The second is modus ponens. The typing rules <em>are</em> the inference rules, in two vocabularies. Variables are the assumptions in play, and variables, lambdas, applications are the whole lambda calculus — not one choice among many, but the minimal machinery of assuming and concluding.</p>
+      <p><strong>Dependency.</strong> But those two rules only build propositions about nothing: in <code>A → B</code>, the B is fixed before any input arrives. Real statements quantify over <em>things</em> — ∀n. n + 0 = n is a family of propositions, one per number — so evidence must be a function whose return type is <em>computed from its argument</em>:</p>
+      <div class="prompt-block"><pre><code>proof : (n : ℕ) → (n + 0 = n)
+                   ^^^^^^^^^ the return type mentions the input</code></pre></div>
+      <p>That single capability — types mentioning values — is the Pi type, the point where the logic acquires a subject matter. And with that the design is done: lambda is "assume", application is "use", Pi is "for all". Axolotl's entire term language is six constructors, and these are why six suffice. What remains is engineering: how the machine evaluates, compares, and checks them.</p>
     </section>
 
     <footer>
