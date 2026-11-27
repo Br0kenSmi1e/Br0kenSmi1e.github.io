@@ -45,6 +45,8 @@ tbody tr:nth-child(even) { background: #f1efe8; }
 .material-links { margin: 0 0 26px; padding-left: 24px; }
 .material-links li { margin-bottom: 10px; }
 summary { cursor: pointer; color: var(--accent); }
+figure { margin: 26px 0; text-align: center; }
+figure img { width: 132px; }
 details[open] summary { margin-bottom: 20px; }
 .editorial-note { margin-top: 26px; }
 footer { margin-top: 36px; font: 14px/1.6 var(--sans); }

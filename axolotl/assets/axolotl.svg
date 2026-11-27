@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 14" shape-rendering="crispEdges">
+  <style>
+    .body { animation: bob 2.4s ease-in-out infinite; }
+    .gills { transform-origin: 7px 6px; animation: sway 2.4s ease-in-out infinite; }
+    .eye { animation: blink 4.5s steps(1) infinite; }
+    @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
+    @keyframes sway { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(8deg); } }
+    @keyframes blink { 0%,92% { opacity: 1; } 92.1%,96% { opacity: 0; } 96.1%,100% { opacity: 1; } }
+  </style>
+  <g class="body">
+    <!-- gills -->
+    <g class="gills" fill="#e0607e">
+      <rect x="4" y="1" width="1" height="2"/><rect x="5" y="0" width="1" height="2"/><rect x="6" y="0" width="1" height="2"/>
+      <rect x="3" y="2" width="2" height="2"/><rect x="7" y="1" width="1" height="3"/>
+      <rect x="2" y="4" width="1" height="2"/><rect x="8" y="3" width="1" height="3"/>
+    </g>
+    <!-- tail -->
+    <rect x="14" y="6" width="6" height="3" fill="#f4b8c9"/>
+    <rect x="20" y="5" width="3" height="3" fill="#f4b8c9"/>
+    <rect x="22" y="4" width="2" height="3" fill="#f4b8c9"/>
+    <!-- body -->
+    <rect x="4" y="4" width="11" height="5" fill="#f4b8c9"/>
+    <rect x="3" y="5" width="2" height="3" fill="#f4b8c9"/>
+    <!-- belly shade -->
+    <rect x="4" y="8" width="10" height="1" fill="#ee9fb5"/>
+    <!-- eye -->
+    <rect class="eye" x="5" y="5" width="1" height="1" fill="#262c2b"/>
+    <!-- smile -->
+    <rect x="3" y="7" width="1" height="1" fill="#262c2b" opacity="0.55"/>
+    <!-- legs -->
+    <rect x="5" y="9" width="2" height="2" fill="#f4b8c9"/>
+    <rect x="12" y="9" width="2" height="2" fill="#f4b8c9"/>
+  </g>
+</svg>
