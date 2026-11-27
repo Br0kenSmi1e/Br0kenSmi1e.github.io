@@ -56,6 +56,12 @@
     </section>
 
 
+    <section id="why-checker">
+      <h2>Why a checker?</h2>
+      <p>Everything so far equips two pieces of text: a <em>statement</em> — a type, the claim — and a <em>proof</em> — a term, the candidate evidence. But text decides nothing. Anyone can write down a claim, and anyone can write down a program and assert it proves the claim. What makes a proof a proof is a third thing: a verdict.</p>
+      <p>The checker is that verdict: a machine that takes claim and candidate and answers whether the candidate truly has the claimed type. And the demands on it are extreme. It must never say yes wrongly, or "proven" means nothing. And since every proof in the system passes through it, it must be small enough to read and simple enough to trust — everything else (notation, search, the clever parts) may be large and fallible, but trust is allowed to live only here. And it can afford to be dumb: finding proofs is the creative, undecidable part; checking one is mechanical. That is why proof assistants are built as tiny kernels — the checker isn't a component of the system, it's the reason the system can be believed.</p>
+    </section>
+
     <section id="how">
       <h2>How: inside the kernel</h2>
       <p>The ideas so far say <em>what</em> must exist. The kernel is two mechanisms that make it run:</p>
