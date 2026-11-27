@@ -18,9 +18,9 @@
       <p class="byline"><time datetime="2026-11">November 2026</time> · A proof checker that never grows up</p>
     </header>
 
-    <p>The axolotl is a salamander that never grows up. It stays in its larval form for its whole life — gills out, fully functional, breeding happily as a perpetual juvenile. I named my theorem prover after it, because that is the design philosophy: a proof checker that stays small on purpose.</p>
-    <p>Every serious proof assistant — Lean, Coq, Agda — rests on a kernel, a small core of code that actually decides whether a proof is valid. Everything else is ergonomics. The folklore says a kernel can be tiny, and I wanted to know how tiny. Axolotl is my answer: about 250 lines of Rust for the kernel, another 130 for a frontend, zero dependencies. And it checks real proofs — including a proof that 2 + 2 = 4.</p>
-    <p>This post is about the ideas, in the order I needed them. Almost nothing in axolotl is invention; each piece exists because the previous idea demands it.</p>
+    <p>I recently built axolotl, a proof checker in about 600 lines of dependency-free Rust. But this post is not about the code. It's about the question the code answers — the question I actually wanted to understand by building it:</p>
+    <p><em>Why can a program check a proof at all?</em></p>
+    <p>A proof, after all, seems like the most human of artifacts: an argument, a chain of insight. Checking one feels like it should require understanding. And yet Lean, Coq, and Agda check proofs mechanically, and their trusted cores are small enough to audit by hand. What makes that possible? This post is the answer, in the order I needed the ideas. Almost nothing in axolotl is invention; each piece exists because the previous idea demands it.</p>
 
     <section id="logic-is-type-checking">
       <h2>Logic is type checking</h2>
