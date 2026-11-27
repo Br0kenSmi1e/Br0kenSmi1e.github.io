@@ -30,12 +30,12 @@
           <tr><th>Logic</th><th>Type</th></tr>
         </thead>
         <tbody>
-          <tr><td>"A and B"</td><td>pair type (A, B)</td></tr>
-          <tr><td>"A implies B"</td><td>function type A → B</td></tr>
-          <tr><td>"for all x, P(x)"</td><td>function whose return type depends on x</td></tr>
-          <tr><td>false</td><td>the empty type</td></tr>
-          <tr><td>proof of P</td><td>an element of P</td></tr>
-          <tr><td>P is true</td><td>P has an element</td></tr>
+          <tr><td><em>A</em> ∧ <em>B</em></td><td><code>(A, B)</code></td></tr>
+          <tr><td><em>A</em> → <em>B</em></td><td><code>A → B</code></td></tr>
+          <tr><td>∀x. P(x)</td><td><code>(x : A) → P(x)</code></td></tr>
+          <tr><td>⊥</td><td><code>∅</code></td></tr>
+          <tr><td><em>p</em> proves P</td><td><code>p : P</code></td></tr>
+          <tr><td>P is true</td><td><code>P</code> is inhabited</td></tr>
         </tbody>
       </table>
       <p>So "is this a proof of P?" becomes "is this an element of type P?" — a mechanical question. Each shape of evidence has exactly one way to check it, every check is local, and there is no search. Example: "if A, then A" is proved by the identity function; checking that proof is checking one function body. This is the Curry–Howard correspondence: propositions are types, proofs are programs — and a proof checker is a type checker.</p>
