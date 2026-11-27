@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A proposition is defined by what counts as evidence for it. A type is defined by what counts as a member of it. Same thing — so checking a proof is type checking.">
+  <meta name="description" content="A proposition is defined by what counts as evidence for it; a type by what counts as a member of it. Same thing — so checking a proof is type checking. On axolotl, a 600-line proof checker.">
   <meta name="theme-color" content="#f8f6f1">
-  <title>Logic Is Type Checking</title>
+  <title>Axolotl — A Proof Checker That Never Grows Up</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/style.css">
 </head>
@@ -14,35 +14,34 @@
 <div class="layout">
   <main id="article">
     <header class="hero" id="top">
-      <h1>Logic Is Type Checking</h1>
-      <p class="byline"><time datetime="2026-11">November 2026</time></p>
+      <h1>Axolotl</h1>
+      <p class="byline"><time datetime="2026-11">November 2026</time> · A proof checker that never grows up</p>
     </header>
 
-    <p>I recently built axolotl, a proof checker in about 600 lines of Rust. This post is the one idea it taught me: <em>checking a proof is type checking a program</em> — not by analogy, but because they are the same activity. Here is the shortest path I know to seeing it.</p>
+    <p>The axolotl is a salamander that never grows up. It stays in its larval form for its whole life — gills out, fully functional, breeding happily as a perpetual juvenile. I named my theorem prover after it, because that is the design philosophy: a proof checker that stays small on purpose.</p>
+    <p>Every serious proof assistant — Lean, Coq, Agda — rests on a kernel, a small core of code that actually decides whether a proof is valid. Everything else is ergonomics. The folklore says a kernel can be tiny, and I wanted to know how tiny. Axolotl is my answer: about 250 lines of Rust for the kernel, another 130 for a frontend, zero dependencies. And it checks real proofs — including a proof that 2 + 2 = 4.</p>
+    <p>This post is about the ideas, in the order I needed them. Almost nothing in axolotl is invention; each piece exists because the previous idea demands it.</p>
 
-    <section>
-      <h2>A proposition is defined by its evidence</h2>
-      <p>What is "A and B"? Whatever you can give as evidence for it: evidence of A, together with evidence of B — a pair. What is "A implies B"? A method that turns any evidence of A into evidence of B — a function. What is "false"? Something with no possible evidence at all.</p>
-      <p>Each proposition is completely pinned down by saying what counts as evidence for it. That is what a proposition <em>is</em>.</p>
+    <section id="logic-is-type-checking">
+      <h2>Logic is type checking</h2>
+      <p>Start with a question that sounds too philosophical to matter: <em>what is a proposition?</em> Take the word "proof" seriously, and a proposition is a specification that says what counts as evidence for it. Every logical connective is literally defined this way:</p>
+      <ul class="material-links">
+        <li>"A <em>and</em> B" — evidence is evidence of A together with evidence of B. A pair.</li>
+        <li>"A <em>implies</em> B" — evidence is a method that turns any evidence of A into evidence of B. A function.</li>
+        <li>"<em>false</em>" — evidence cannot exist. The empty specification.</li>
+      </ul>
+      <p>Now ask a second question, from the other side: <em>what is a type?</em> Forget programming for a moment — a type is a specification that says what counts as a member of it. The natural numbers are "zero, successor of zero, and so on." A function type is "things you can call with an A to get back a B."</p>
+      <p>Put the two answers side by side: a specification of evidence, and a specification of members. <strong>The same kind of thing, named twice.</strong> So read the first list again as types: "and" is a pair type, "implies" is a function type, "false" is an empty type. A proof of a proposition is an element of the type. A true proposition is a type that has an element; a false one is a type that happens to be empty.</p>
+      <p>And now the machine enters. "Is this a proof of the proposition?" has become "is this an element of the type?" — a mechanical question. Every shape of evidence has exactly one way to check it: to check a function as evidence of an implication, assume evidence of A and check that the body produces evidence of B; to check a function call, verify the argument's type matches the domain. Each check is local, the evidence announces its own shape, and there is no search, no insight, no judgment. That is why a small, dumb machine can do it — and why it can be trusted: it never guesses, it only verifies. An example, in full: "if A, then A" is proved by the identity function — give it evidence of A, it hands the same evidence back. The proof is three characters long, and a computer can confirm it.</p>
+      <p>The idea has a name — Curry–Howard — and a slogan: <em>propositions are types, proofs are programs</em>. The slogan is easy to memorize and hard to feel. The version that made it click for me is the one above: evidence and membership are the same notion, so logic and type checking were never two things.</p>
     </section>
 
-    <section>
-      <h2>A type is defined by its members</h2>
-      <p>What is the type of natural numbers? Whatever counts as a member: zero, successor of zero, and so on. What is a function type? Whatever you can call with an A to get back a B.</p>
-      <p>A type is completely pinned down by saying what counts as a member of it. That is what a type <em>is</em>.</p>
-      <p>Put the two paragraphs side by side: <strong>a specification of evidence, and a specification of members — the same kind of thing.</strong> So read the first list again as types: "and" is a pair type, "implies" is a function type, "false" is an empty type. A proof of a proposition is an element of the type. A true proposition is a type that has an element; a false one is a type that happens to be empty.</p>
-    </section>
-
-    <section>
-      <h2>So checking a proof is checking a type</h2>
-      <p>"Is this a proof of the proposition?" now means "is this an element of the type?" — and that question is mechanical. Every shape of evidence has exactly one way to check it. To check a function as evidence of "A implies B": assume evidence of A, check that the body produces evidence of B. To check a function call: does the argument's type match the domain? Each check is local; the evidence announces its own shape; no search, no insight, no judgment. That is why a small, dumb machine can do it — and why the machine can be trusted: it never guesses, it only verifies.</p>
-      <p>An example, in full. Proposition: "if A, then A". Evidence: the identity function — give it evidence of A, it hands the same evidence back. Checking it means checking one function body. Done. The proof is three characters long, and a computer can confirm it.</p>
-    </section>
-
-    <section>
-      <h2>That is the whole idea</h2>
-      <p>Everything else is this idea scaled up. "For every number n" is a function whose return type depends on the input — one more constructor, nothing new conceptually. Equality, numbers, induction: same pattern, more constructors. Axolotl implements the smallest version that works, and its kernel — the part that must be trusted — is about 250 lines.</p>
-      <p>The idea has a name, Curry–Howard, and a slogan: <em>propositions are types, proofs are programs</em>. But the slogan is easy to memorize and hard to feel. The version that made it click for me is the one above: evidence and membership are the same notion, so logic and type checking were never two things.</p>
+    <section id="why-lambda-pi">
+      <h2>Why the lambda-Pi calculus?</h2>
+      <p>So proofs are programs. But programs in <em>which</em> language? It turns out the logic itself dictates the answer — twice.</p>
+      <p><strong>First, functions.</strong> Evidence for an implication is a method — something that takes evidence of A and produces evidence of B. So the language needs exactly two abilities: to <em>build</em> a method (introduce a hypothesis, use it in a body, discharge it — that is a lambda), and to <em>use</em> a method (feed it evidence — that is an application). Variables are the assumptions currently in play. A calculus with just variables, lambdas, and applications is the lambda calculus — not a choice among many, but the minimal machinery of "assume" and "therefore". Every construct is a proof move; there is nothing extra and nothing missing.</p>
+      <p><strong>Then, dependency.</strong> Plain functions handle bare implications — A implies B, propositions about nothing. But mathematics quantifies over <em>things</em>: "for every number n, n + 0 = n" is not one proposition but a family, one per number. Evidence for it must be a function whose <em>return type depends on the input value</em>: feed it 3, get evidence of "3 + 0 = 3"; feed it 17, get evidence of "17 + 0 = 17". That single capability — types allowed to mention values — is the Pi type. It is the precise point where the logic acquires a subject matter.</p>
+      <p>That is the whole design. The lambda-Pi calculus is the smallest language in which every construct is a form of evidence: lambda is "assume", application is "use", Pi is "for all". Axolotl's entire term language is six constructors — variables, lambda, application, Pi, universes, annotations — and these two ideas are the reason those six suffice. What remains is engineering: how the machine actually evaluates, compares, and checks them. That is where the next idea lives.</p>
     </section>
 
     <footer>
